@@ -1,0 +1,12 @@
+# Bio 
+Cara is a freelance data consultant with an academic background, specialising in dataviz and in "enhanced" reproducible outputs. She lives in Edinburgh, Scotland, and is passionate about maximising the impact of other people's expertise.
+
+# Title ----
+Dataviz with R and ggplot: Using colour and annotations for effective story telling
+
+# Abstract ----
+"Yikes, that's a lot of information!" If we're passionate about our data and the patterns we've found, a key part of our job is to find effective ways of communicating what we've discovered. Intuitive and compelling data visualisations are a great way to draw attention to our main story, and illustrate some of the details. 
+
+In this workshop, we'll talk about how we can make use of colour, fonts and a few other tricks to make it easier for readers to understand and remember our main story and make our plots publication-ready. We'll be using R and ggplot to create, modify and annotate the plots we discuss, but the principles apply regardless of the tools you use to plot your data. 
+
+Attendees are encouraged to bring along a plot of their own (which doesn't need to be made with ggplot!) so that think about how best to apply the principles to their own context - and for a chance for some live feedback during our Q&A session. 

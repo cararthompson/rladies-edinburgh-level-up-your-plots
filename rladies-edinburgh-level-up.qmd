@@ -1,0 +1,3109 @@
+---
+title: "Level up your plots"
+subtitle: "RLadies Edinburgh | Dataviz workshop | `r verbaliseR::prettify_date('2023-05-30', uk_or_us = 'UK')`"
+from: markdown+emoji
+format:
+  revealjs: 
+    transition: none
+    slide-number: false
+    chalkboard: 
+      buttons: false
+    preview-links: auto
+    logo: images/light-logo.png
+    theme: cararquarto.scss
+    footer: |
+        Slides & Code: [cararthompson.com/talks/rladies-edinburgh-level-up-your-plots/](https://www.cararthompson.com/talks/rladies-edinburgh-level-up-your-plots/)
+filters:
+ - code-visibility
+ - lightbox
+lightbox: auto
+fig-height: 9
+auto-animate: true
+title-slide-attributes:
+    data-background-image: "images/dark-background.png"
+    data-background-size: stretch
+    data-background-opacity: "1"
+    data-background-color: black
+---
+
+# Intro {visibility=hidden}
+
+## Hi there :wave: ! {transition="convex-in none-out"}
+
+
+```{r setup}
+knitr::opts_chunk$set(dev = "ragg_png")
+```
+
+
+👩 Cara Thompson
+
+👩‍💻 A love for patterns `|>` Psychology PhD `|>` 
+Head of Psychometrics, RCSEd `|>` 
+Data Visualisation Consultant
+
+::: fragment
+💙 Helping others maximise the impact of their expertise
+:::
+
+::: fragment
+☕ Cafe at Modern One Art Gallery
+:::
+
+<br>
+
+::: footer
+Find out more: [cararthompson.com/about](https://cararthompson.com/about)
+:::
+
+## Today's goal {transition="none"}
+
+**To equip you with some design tips and coding tricks to enhance the storytelling capabilities of your plots.**
+
+::: {.incremental}
+- Explore how to be less dependent on annotations by using intuitive colour palettes
+- Illustrate ways in which we can use text colour and fonts to add text hierarchy
+- Add in story-enhancing annotations and data highlights to draw attention to the key data patterns
+- Package up bits of reusable `R` code
+- Introduce you to `{ggtext}`, `{geomtextpath}` and `{gghighlight}`
+:::
+
+
+## A bit of housekeeping {transition="none"}
+
+::: {.incremental}
+- **Please ask for help!**
+- Regular breaks to apply what we're learning to your own plots
+- Namespacing (`package::function("blah")`)
+- Choose your own pipe (I like the old one)
+- Reuse as much of the code as you like
+:::
+
+
+## "Intuitive colour palettes?"
+
+::: fragment
+<center>
+Which one is Bouba, and which one is Kiki?
+</center>
+
+::: fragment
+<center>
+"Sound Symbolism" - Wolfgang Köhler 1929
+</center>
+:::
+
+![](images/bouba3.webp)
+:::
+
+
+::: footer
+Find out more: [en.wikipedia.org/wiki/Bouba/kiki_effect](https://en.wikipedia.org/wiki/Bouba/kiki_effect)
+:::
+
+## "Intuitive colour palettes?"
+<center>
+Which one is Bouba, and which one is Kiki?
+</center>
+
+::: fragment
+<center>
+Predicted by sound properties - Passi & Arun, 2022
+</center>
+
+![](images/bouba-kiki-extended.png)
+:::
+
+
+::: footer
+Find out more: [Passi, A. and Arun, S.P. (2022) The Bouba–Kiki effect is predicted by sound properties but not speech properties](https://link.springer.com/epdf/10.3758/s13414-022-02619-8?sharing_token=lzTJdP6hgoYhVOc6rmHfXpAH0g46feNdnc402WrhzypVmvSSfCbwj1txva3NdkzHgu5EIo21KZpZnoPj_xFUQVbwvwAUYwk2UXeLZeSju5Okdfy7kdim90ZuyUM0nk7cV9TR-07C6JvjvNyRAz7bHCgMK57oHPbd3J0KdG4LXCw=)
+:::
+
+
+# Let's play a quick game...
+
+--- 
+
+![](images/penguin-bakeoff.png)
+
+## The Great Penguin Bake Off
+
+The penguins had a baking competition to see which species could make the best banana loaf. Each species was given bananas of a different level of ripeness.
+
+```{r}
+#|fig.height: 6
+library(palmerpenguins)
+library(tidyverse)
+
+ggplot(penguins,
+       aes(x = species, 
+           fill = species,
+           y = bill_length_mm)) +
+  geom_bar(show.legend = FALSE, 
+           stat = "summary", 
+           fun = "mean") +
+  labs(title = "The taller the bar, the yummier the cake!") +
+  theme_minimal(base_size = 24) +
+  theme(text = element_text(family = "Noah"),
+        axis.title = element_blank(),
+        panel.grid = element_blank())
+```
+
+## The Great Penguin Bake Off
+
+The penguins had a baking competition to see which species could make the best banana loaf. Each species was given bananas of a different level of ripeness.
+
+```{r}
+#|fig.height: 6
+banana_type_palette <- list("Adelie" = "#89973d",
+                            "Chinstrap" = "#e8b92f",
+                            "Gentoo" = "#a45e41")
+
+ggplot(penguins,
+       aes(x = species, 
+           fill = species,
+           y = bill_length_mm)) +
+  geom_bar(show.legend = FALSE, 
+           stat = "summary", 
+           fun = "mean") +
+  scale_fill_manual(values = banana_type_palette) +
+  labs(title = "The taller the bar, the yummier the cake!") +
+  theme_minimal(base_size = 24) +
+  theme(text = element_text(family = "Noah"),
+        axis.title = element_blank(),
+        panel.grid = element_blank())
+```
+
+
+## The Great Penguin Bake Off
+
+The Adelie penguins decided to experiment with different quantities of unripe banana in their mix. Each island chose a different quantity.
+
+```{r}
+#|fig.height: 6
+penguins <- penguins %>%
+  mutate(banana_quantity = case_when(species == "Adelie" & island == "Biscoe" ~ 1,
+                                     species == "Adelie" & island == "Dream" ~ 0.6,
+                                     species == "Adelie" & island == "Torgersen" ~ 0,
+                                     TRUE ~ 1))
+
+ggplot(filter(penguins, species == "Adelie"),
+       aes(x = island, 
+           fill = island,
+           y = bill_length_mm)) +
+  geom_bar(show.legend = FALSE, 
+           stat = "summary", 
+           fun = "mean",
+           size = 1) +
+  scale_alpha(range = c(0.1, 0.9)) +
+  labs(title = "The taller the bar, the yummier the cake!") +
+  theme_minimal(base_size = 24) +
+  theme(text = element_text(family = "Noah"),
+        axis.title = element_blank(),
+        panel.grid = element_blank())
+```
+
+
+## The Great Penguin Bake Off
+
+The Adelie penguins decided to experiment with different quantities of unripe banana in their mix. Each island chose a different quantity.
+
+```{r}
+#|fig.height: 6
+ggplot(filter(penguins, species == "Adelie"),
+       aes(x = island, 
+           fill = species,
+           alpha = banana_quantity,
+           y = bill_length_mm)) +
+  geom_bar(show.legend = FALSE, 
+           stat = "summary", 
+           fun = "mean",
+           size = 1.5,
+           colour = banana_type_palette$Adelie) +
+  scale_fill_manual(values = banana_type_palette) +
+  scale_alpha(range = c(0.2, 1)) +
+  labs(title = "The taller the bar, the yummier the cake!") +
+  theme_minimal(base_size = 24) +  
+  theme(text = element_text(family = "Noah"),
+        axis.title = element_blank(),
+        panel.grid = element_blank())
+```
+
+## The Great Penguin Bake Off
+
+They decided to go on a retreat to plan their bakes in different locations
+
+```{r}
+penguin_plot <- ggplot(palmerpenguins::penguins %>%
+                         mutate(species = as.factor(species)),
+                       aes(x = species)) +
+  geom_bar(show.legend = FALSE,
+           aes(colour = species,
+               fill = species),
+           size = 1.5) +
+  theme_minimal(base_size = 24) +
+  theme(text = element_text(family = "Noah"),
+        axis.title = element_blank(),
+        panel.grid = element_blank())
+
+penguin_plot +
+  scale_fill_manual(values = c("Adelie" = "#b0a798",
+                               "Chinstrap" = "#afba49",
+                               "Gentoo" = "#d8ebfa")) +
+  scale_colour_manual(values = c("Adelie" = "#515153",
+                                 "Chinstrap" = "#6f7453",
+                                 "Gentoo" = "#84a8cc"))
+```
+
+## The Great Penguin Bake Off
+
+Each species was allowed to invite a different mentor...
+
+```{r}
+penguin_plot +
+  scale_fill_manual(values = c("Adelie" = "#b6c3bc",
+                               "Chinstrap" = "#d45594",
+                               "Gentoo" = "#f9f0e6")) +
+  scale_colour_manual(values = c("Adelie" = "#8fc6c9",
+                                 "Chinstrap" = "#a82f22",
+                                 "Gentoo" = "#fdbeda"))
+```
+
+
+## The Great Penguin Bake Off
+
+... and to choose a type of snack between practice bakes
+
+```{r}
+penguin_plot +
+  scale_fill_manual(values = c("Adelie" = "#615c59",
+                               "Chinstrap" = "#e0e6eb",
+                               "Gentoo" = "#d9762b")) +
+  scale_colour_manual(values = c("Adelie" = "#495152",
+                                 "Chinstrap" = "#0f1415",
+                                 "Gentoo" = "#f5d368"))
+```
+
+
+## The Great Penguin Bake Off - Bonus round!
+
+The penguins also baked their cakes for different amounts of time. Here are the mean durations per species.
+
+```{r}
+#|fig.height: 6
+duration_plot <- ggplot(penguins,
+                        aes(x = species, 
+                            fill = species,
+                            y = bill_depth_mm)) +
+  geom_bar(show.legend = FALSE, 
+           stat = "summary", 
+           fun = "mean") +
+  scale_fill_manual(values = banana_type_palette) +
+  theme_minimal(base_size = 24) +
+  labs(x = "",
+       y = "Time in the oven") +
+  theme(text = element_text(family = "Noah"),
+        panel.grid = element_blank())
+
+duration_plot
+```
+
+
+## The Great Penguin Bake Off - Bonus round!
+
+The penguins also baked their cakes for different amounts of time. Here are the mean durations per species.
+
+```{r}
+duration_plot +
+  coord_flip()
+```
+
+
+--- 
+
+![](images/penguin-bakeoff.png)
+
+
+## Level up your plots
+
+### <span style=color:#28A569>#1</span> - Use colour (and orientation) purposefully 
+
+### <span style=color:#28A569>#2</span> - Add text hierarchy  {.faded}
+
+### <span style=color:#28A569>#3</span> - Reduce unnecessary eye movement  {.faded}
+
+### <span style=color:#28A569>#4</span> - Highlight important patterns {.faded}
+
+
+
+## <span style=color:#28A569>#1</span> Use colour purposefully
+
+**All about making it easier to remember what is what**
+
+<br>
+
+::: {.fragment}
+Picking colours is hard! Let others help you! 
+::: 
+
+
+::: {.incremental}
+- Your brand guidelines
+- A photo + something like [imagecolorpicker.com](https://imagecolorpicker.com/) to pick out colours
+:::
+
+
+## <span style=color:#28A569>#1</span> Use colour purposefully
+
+![](images/photos.png)
+
+
+## <span style=color:#28A569>#1</span> Use colour purposefully
+
+
+::: {.columns}
+
+::: {.column width=60%}
+
+::: {.fragment}
+
+```{r}
+#| echo: true
+#| results: hide
+#| fig-width: 6
+#| fig-height: 1.7
+
+machine <- "#061939"
+human <- "#e25470"
+monochromeR::generate_palette(machine, 
+                              blend_colour = human, 
+                              n_colours = 3, 
+                              view_palette = TRUE)
+```
+
+:::
+
+:::
+
+::: {.column width=35%}
+
+<br>
+<br>
+<br>
+
+::: {.fragment}
+![](images/machine.gif)
+:::
+
+:::
+:::
+
+
+## <span style=color:#28A569>#1</span> Use colour purposefully
+
+::: {.columns}
+::: {.column width=50%}
+![](images/202210_gbbo.png)
+:::
+
+::: {.column width=50%}
+::: {.fragment}
+
+<br>
+<br>
+![](images/gbbo.jpg)
+:::
+:::
+:::
+
+
+## <span style=color:#28A569>#1</span> Use colour purposefully
+
+- <span style=color:#808A95>Your department brand guidelines
+- <span style=color:#808A95>A photo + something like [imagecolorpicker.com](https://imagecolorpicker.com/) to pick out colours</span>
+- Take inspiration from other dataviz / art you like
+
+
+## <span style=color:#28A569>#1</span> Use colour purposefully
+
+:::: {.columns}
+
+::: {.column width=50%}
+
+![](images/d7hftxdivxxvm.cloudfront.webp)
+
+:::
+
+::: {.column width=50%}
+
+```
+plots +
+  scale_colour_ophelia() +
+  theme_ophelia()
+```
+
+![](images/data-viz-design-system.gif)
+
+:::
+
+::::
+
+::: footer
+[Leon Morrocco, Untitled (Jean resting)](https://www.artsy.net/artwork/leon-morrocco-untitled-jean-resting)
+:::
+
+## <span style=color:#28A569>#1</span> Use colour purposefully
+
+- <span style=color:#808A95>Your department brand guidelines
+- <span style=color:#808A95>A photo + something like [imagecolorpicker.com](https://imagecolorpicker.com/) to pick out colours</span>
+- <span style=color:#808A95>Take inspiration from other dataviz / art you like</span>
+- Google images and "[whatever you like] palette"
+
+
+## <span style=color:#28A569>#1</span> Use colour purposefully
+
+![](images/edinburgh-palette.webp)
+
+
+::: footer
+Source: The Colour Palette Company
+:::
+
+
+## <span style=color:#28A569>#1</span> Use colour purposefully
+
+- <span style=color:#808A95>Your department brand guidelines
+- <span style=color:#808A95>A photo + something like [imagecolorpicker.com](https://imagecolorpicker.com/) to pick out colours</span>
+- <span style=color:#808A95>Take inspiration from other dataviz / art you like</span>
+- <span style=color:#808A95>Google images and "[whatever you like] palette"</span>
+- Or... start from the colour wheel and read around how best to use it
+  - Using a tool like [paletton.com](https://paletton.com/) makes it easier!
+
+::: footer
+Find out more: [blog.datawrapper.de/colors-for-data-vis-style-guides/](https://blog.datawrapper.de/colors-for-data-vis-style-guides/)
+:::
+
+
+## <span style=color:#28A569>#1</span> Use colour purposefully
+
+Quick tip: Viewing your colours
+
+
+```{r}
+#| echo: true
+#| output-location: column-fragment
+
+penguin_locations <- c("#b0a798",
+                       "#afba49",
+                       "#d8ebfa")
+
+monochromeR::view_palette(penguin_locations)
+
+```
+
+
+## <span style=color:#28A569>#1</span> Use colour purposefully
+
+Quick tip: *Naming* and viewing your colours
+
+```{r}
+#| echo: true
+#| output-location: column
+
+penguin_locations <- c("Adelie" = "#b0a798",
+                       "Chinstrap" = "#afba49",
+                       "Gentoo" = "#d8ebfa")
+
+monochromeR::view_palette(penguin_locations)
+
+```
+
+
+
+## <span style=color:#28A569>#1</span> Use colour purposefully
+
+A few things to bear in mind
+
+::: incremental
+- Accessibility
+  - `colorblindr::cvd_grid()`
+:::
+
+::: {.fragment}
+```{r}
+#| echo: false
+#| output-location: fragment
+#| fig-height: 4
+colorblindr::cvd_grid()
+```
+:::
+
+## <span style=color:#28A569>#1</span> Use colour purposefully
+
+A few things to bear in mind
+
+- Accessibility
+  - `colorblindr::cvd_grid()`
+  - [colourcontrast.cc](https://colourcontrast.cc/)
+
+
+## <span style=color:#28A569>#1</span> Use colour purposefully
+
+A few things to bear in mind
+
+::: {.incremental}
+- Accessibility
+- Race/Ethnicity - avoid stereotypes and be mindful of unintended messages
+- Colour intensity - "more is more"
+:::
+
+
+## <span style=color:#28A569>#1</span> Use colour purposefully
+
+A few things to bear in mind
+
+- Accessibility
+- Race/Ethnicity - avoid stereotypes and be mindful of unintended messages
+- Colour intensity - "more is more"
+
+<center>
+![](images/ti_map.png){width=50%}
+</center>
+<br>
+
+
+## <span style=color:#28A569>#1</span> Use colour purposefully
+
+A few things to bear in mind
+
+- Accessibility
+- Race/Ethnicity - avoid stereotypes and be mindful of unintended messages
+- Colour intensity - "more is more" - consider "dark mode"
+
+<center>
+![](images/ti_map.png){width=50%}
+</center>
+<br>
+
+## <span style=color:#28A569>#1</span> Use colour purposefully
+
+A few things to bear in mind
+
+- Accessibility
+- Race/Ethnicity - avoid stereotypes and be mindful of unintended messages
+- Colour intensity - "more is more" - consider "dark mode"
+
+<center>
+![](images/powerline_map.png){width=50%}
+</center>
+<br>
+
+# Over to you! {background=#2C3D4F}
+
+- Think about the concepts in your own data
+- Look for images related to those concepts
+- Extract the colour codes you need - `imagecolorpicker.com`
+- Check what they look like together - `monochromeR::view_palette()`
+- Assess using `colorblindr::cvd_grid()`
+
+::: {.fragment}
+**You have 5 minutes!**  📊 🎨 ☕  
+
+```{r}
+countdown::countdown(minutes = 5L, warn_when = 60, style = "border-color: #28A569")
+```
+:::
+
+
+# Let's get coding! {background=#2C3D4F}
+
+# #1 - colour {visibility=hidden}
+
+## Setting up our first plot
+
+Using the ToothGrowth dataset
+
+:::: {.columns}
+
+::: {.column width=50%}
+
+- Built into R for easy "codealongability"
+- Intriguing dataset (`?ToothGrowth`)
+- Research question with a pattern to visualise and annotate
+
+:::
+
+::: {.column width=50%}
+
+<center>
+
+![](https://media.tenor.com/S5gVmtZuDGQAAAAC/guinea-pigs-cute.gif){width=75%}
+
+</center>
+
+:::
+
+::::
+
+## Setting up our first plot 
+
+With a few tips along the way
+
+```{r}
+#| output-location: column-fragment
+#| echo: true
+
+library(tidyverse)
+
+ToothGrowth %>%
+  group_by(supp, dose) %>%
+  summarise(mean_length = mean(len)) %>%
+  ggplot(aes(x = dose,
+             y = mean_length,
+             fill = supp)) +
+  geom_bar(stat = "identity")
+
+```
+
+
+## Setting up our first plot 
+
+With a few tips along the way
+
+```{r}
+#| output-location: column
+#| echo: true
+#| code-line-numbers: "8"
+ToothGrowth %>%
+  group_by(supp, dose) %>%
+  summarise(mean_length = mean(len)) %>%
+  ggplot(aes(x = dose,
+             y = mean_length,
+             fill = supp)) +
+  geom_bar(stat = "identity",
+           position = "dodge")
+
+```
+
+
+## Setting up our first plot 
+
+With a few tips along the way
+
+```{r}
+#| output-location: column
+#| echo: true
+#| code-line-numbers: "9-10"
+ToothGrowth %>%
+  group_by(supp, dose) %>%
+  summarise(mean_length = mean(len)) %>%
+  ggplot(aes(x = dose,
+             y = mean_length,
+             fill = supp)) +
+  geom_bar(stat = "identity",
+           position = "dodge", 
+           colour = "#FFFFFF",
+           size = 2)
+```
+
+
+
+## Setting up our first plot 
+
+Mini tip: get rid of abbreviations
+
+```{r}
+#| output-location: column-fragment
+#| echo: true
+#| code-line-numbers: "2-5|6,10"
+ToothGrowth %>%
+  mutate(supplement = 
+           case_when(supp == "OJ" ~ "Orange Juice",
+                     supp == "VC" ~ "Vitamin C",
+                     TRUE ~ as.character(supp))) %>%
+  group_by(supplement, dose) %>%
+  summarise(mean_length = mean(len)) %>%
+  ggplot(aes(x = dose,
+             y = mean_length,
+             fill = supplement)) +
+  geom_bar(stat = "identity",
+           position = "dodge", 
+           colour = "#FFFFFF",
+           size = 2)
+```
+
+
+
+## Setting up our first plot 
+
+Mini tip: `theme_minimal()`
+
+```{r}
+#| output-location: column
+#| echo: true
+#| code-line-numbers: "13"
+ToothGrowth %>%
+  mutate(supplement = 
+           case_when(supp == "OJ" ~ "Orange Juice", supp == "VC" ~ "Vitamin C", TRUE ~ as.character(supp))) %>%
+  group_by(supplement, dose) %>%
+  summarise(mean_length = mean(len)) %>%
+  ggplot(aes(x = dose,
+             y = mean_length,
+             fill = supplement)) +
+  geom_bar(stat = "identity",
+           position = "dodge", 
+           colour = "#FFFFFF",
+           size = 2) +
+  theme_minimal()
+```
+
+
+## Setting up our first plot 
+
+Turning Dose into a categorical variable (fear not!)
+
+```{r}
+#| output-location: column
+#| echo: true
+#| code-line-numbers: "5"
+ToothGrowth %>%
+  mutate(supplement = case_when(supp == "OJ" ~ "Orange Juice", supp == "VC" ~ "Vitamin C", TRUE ~ as.character(supp))) %>%
+  group_by(supplement, dose) %>%
+  summarise(mean_length = mean(len)) %>%
+  mutate(categorical_dose = factor(dose)) %>%
+  ggplot(aes(x = categorical_dose,
+             y = mean_length,
+             fill = supplement)) +
+  geom_bar(stat = "identity",
+           position = "dodge",
+           colour = "#FFFFFF", 
+           size = 2) +
+  theme_minimal()
+```
+
+
+## Setting up our first plot 
+
+Turning Dose into a categorical variable (fear not!) + facetting
+
+```{r}
+#| output-location: column
+#| echo: true
+#| code-line-numbers: "12"
+ToothGrowth %>%
+  mutate(supplement = case_when(supp == "OJ" ~ "Orange Juice", supp == "VC" ~ "Vitamin C", TRUE ~ as.character(supp))) %>%
+  group_by(supplement, dose) %>%
+  summarise(mean_length = mean(len)) %>%
+  mutate(categorical_dose = factor(dose)) %>%
+  ggplot(aes(x = categorical_dose,
+             y = mean_length,
+             fill = supplement)) +
+  geom_bar(stat = "identity",
+           colour = "#FFFFFF", 
+           size = 2) + 
+  facet_wrap(supplement ~ ., ncol = 1) +
+  theme_minimal()
+```
+
+
+## Setting up our first plot 
+
+Adding some text (finally!)
+
+```{r}
+#| output-location: column
+#| echo: true
+#| code-line-numbers: "12-16"
+ToothGrowth %>%
+  mutate(supplement = case_when(supp == "OJ" ~ "Orange Juice", supp == "VC" ~ "Vitamin C", TRUE ~ as.character(supp))) %>%
+  group_by(supplement, dose) %>%
+  summarise(mean_length = mean(len)) %>%
+  mutate(categorical_dose = factor(dose)) %>%
+  ggplot(aes(x = categorical_dose,
+             y = mean_length,
+             fill = supplement)) +
+  geom_bar(stat = "identity",
+           colour = "#FFFFFF", 
+           size = 2) + 
+  labs(x = "Dose",
+       y = "Mean length (mm)",
+       title = "In smaller doses, Orange Juice was associated with greater mean tooth growth,
+compared to equivalent doses of Vitamin C",
+subtitle = "With the highest dose, the mean recorded length was almost identical.") +
+  facet_wrap(supplement ~ ., ncol = 1) +
+  theme_minimal()
+```
+
+
+## Setting up our first plot 
+
+Legend + facet strip + colour + title... Wait, which one is which? 
+
+
+:::: {.columns}
+
+::: {.column width=50%}
+
+::: {.fragment}
+
+![](https://media1.giphy.com/media/ouE6OPO1MADM4/giphy.gif)
+
+:::
+
+:::
+
+
+::: {.column width=50%}
+
+```{r}
+#| echo: false
+ToothGrowth %>%
+  mutate(supplement = case_when(supp == "OJ" ~ "Orange Juice", supp == "VC" ~ "Vitamin C", TRUE ~ as.character(supp))) %>%
+  group_by(supplement, dose) %>%
+  summarise(mean_length = mean(len)) %>%
+  mutate(categorical_dose = factor(dose)) %>%
+  ggplot(aes(x = categorical_dose,
+             y = mean_length,
+             fill = supplement)) +
+  geom_bar(stat = "identity",
+           colour = "#FFFFFF", 
+           size = 2) + 
+  labs(x = "Dose",
+       y = "Mean length (mm)",
+       title = "In smaller doses, Orange Juice was associated with greater mean tooth growth,
+compared to equivalent doses of Vitamin C",
+subtitle = "With the highest dose, the mean recorded length was almost identical.") +
+  facet_wrap(supplement ~ ., ncol = 1) +
+  theme_minimal()
+```
+
+::: 
+
+::::
+
+
+## <span style=color:#28A569>#1</span> - Use colour purposefully
+
+:::: {.columns}
+
+::: {.column width=50%}
+
+::: {.fragment}
+
+![](https://hips.hearstapps.com/hmg-prod/images/glass-of-orange-juice-with-oranges-1589917191.jpg)
+:::
+
+:::
+
+::: {.column width=50%}
+
+
+:::{.incremental}
+
+- Orange juice is... orange! 
+- Vitamin C is... also orange, but more red and "aggressive"
+- Those green leaves look nice with those colours... 
+- [imagecolorpicker.com](https://imagecolorpicker.com/)
+
+:::
+
+:::
+
+::::
+
+
+## <span style=color:#28A569>#1</span> - Use colour purposefully
+
+Generating a colour palette, starting with orange juice! <span style='background:#fab909'>#fab909</span>
+
+```{r}
+#| echo: true
+#| fig-height: 0.7
+monochromeR::generate_palette("#db5a05", blend_colour = "red", n_colours = 3, view_palette = TRUE)
+monochromeR::generate_palette("#3c6b30", "go_darker", n_colours = 2, view_palette = TRUE)
+monochromeR::generate_palette("#0C1509", "go_lighter", n_colours = 6, view_palette = TRUE)
+```
+
+
+## <span style=color:#28A569>#1</span> - Use colour purposefully
+
+Creating a named vector
+
+```{r}
+#| echo: true
+#| fig-height: 3
+vit_c_palette <- c("Orange Juice" = "#fab909", 
+                   "Vitamin C" = "#E93603",
+                   light_text = "#323A30",
+                   dark_text =  "#0C1509")
+
+monochromeR::view_palette(vit_c_palette)
+
+```
+
+
+## <span style=color:#28A569>#1</span> - Use colour purposefully
+
+Back to the plot! 
+
+```{r}
+#| output-location: column
+#| echo: true
+#| code-line-numbers: ""
+ToothGrowth %>%
+  mutate(supplement = case_when(supp == "OJ" ~ "Orange Juice", supp == "VC" ~ "Vitamin C", TRUE ~ as.character(supp))) %>%
+  group_by(supplement, dose) %>%
+  summarise(mean_length = mean(len)) %>%
+  mutate(categorical_dose = factor(dose)) %>%
+  ggplot(aes(x = categorical_dose,
+             y = mean_length,
+             fill = supplement)) +
+  geom_bar(stat = "identity",
+           colour = "#FFFFFF", 
+           size = 2) + 
+  labs(x = "Dose",
+       y = "Mean length (mm)",
+       title = "In smaller doses, Orange Juice was associated with greater mean tooth growth,
+compared to equivalent doses of Vitamin C",
+subtitle = "With the highest dose, the mean recorded length was almost identical.") +
+  facet_wrap(supplement ~ ., ncol = 1) +
+  theme_minimal()
+```
+
+## <span style=color:#28A569>#1</span> - Use colour purposefully
+
+Add in our colours
+
+```{r}
+#| output-location: column
+#| echo: true
+#| code-line-numbers: "17-18"
+ToothGrowth %>%
+  mutate(supplement = case_when(supp == "OJ" ~ "Orange Juice", supp == "VC" ~ "Vitamin C", TRUE ~ as.character(supp))) %>%
+  group_by(supplement, dose) %>%
+  summarise(mean_length = mean(len)) %>%
+  mutate(categorical_dose = factor(dose)) %>%
+  ggplot(aes(x = categorical_dose,
+             y = mean_length,
+             fill = supplement)) +
+  geom_bar(stat = "identity",
+           colour = "#FFFFFF", 
+           size = 2) + 
+  labs(x = "Dose",
+       y = "Mean length (mm)",
+       title = "In smaller doses, Orange Juice was associated with greater mean tooth growth,
+compared to equivalent doses of Vitamin C",
+subtitle = "With the highest dose, the mean recorded length was almost identical.") +
+  scale_fill_manual(values = c("#fab909", 
+                               "#E93603")) +
+  facet_wrap(supplement ~ ., ncol = 1) +
+  theme_minimal()
+```
+
+
+
+## <span style=color:#28A569>#1</span> - Use colour purposefully
+
+Add in our colours - wait, what?
+
+```{r}
+#| output-location: column
+#| echo: true
+#| code-line-numbers: "6-9,21-22"
+ToothGrowth %>%
+  mutate(supplement = case_when(supp == "OJ" ~ "Orange Juice", supp == "VC" ~ "Vitamin C", TRUE ~ as.character(supp))) %>%
+  group_by(supplement, dose) %>%
+  summarise(mean_length = mean(len)) %>%
+  mutate(categorical_dose = factor(dose),
+         supplement = 
+           factor(supplement, 
+                  levels = c("Vitamin C", 
+                             "Orange Juice"))) %>%
+  ggplot(aes(x = categorical_dose,
+             y = mean_length,
+             fill = supplement)) +
+  geom_bar(stat = "identity",
+           colour = "#FFFFFF", 
+           size = 2) + 
+  labs(x = "Dose",
+       y = "Mean length (mm)",
+       title = "In smaller doses, Orange Juice was associated with greater mean tooth growth,
+compared to equivalent doses of Vitamin C",
+subtitle = "With the highest dose, the mean recorded length was almost identical.") +
+  scale_fill_manual(values = c("#fab909", 
+                               "#E93603")) +
+  facet_wrap(supplement ~ ., ncol = 1) +
+  theme_minimal()
+```
+
+
+## <span style=color:#28A569>#1</span> - Use colour purposefully
+
+Add in our colours - named vector to the rescue!
+
+```{r}
+#| output-location: column-fragment
+#| echo: true
+#| code-line-numbers: "6-9,21"
+ToothGrowth %>%
+  mutate(supplement = case_when(supp == "OJ" ~ "Orange Juice", supp == "VC" ~ "Vitamin C", TRUE ~ as.character(supp))) %>%
+  group_by(supplement, dose) %>%
+  summarise(mean_length = mean(len)) %>%
+  mutate(categorical_dose = factor(dose),
+         supplement = 
+           factor(supplement, 
+                  levels = c("Vitamin C", 
+                             "Orange Juice"))) %>%
+  ggplot(aes(x = categorical_dose,
+             y = mean_length,
+             fill = supplement)) +
+  geom_bar(stat = "identity",
+           colour = "#FFFFFF", 
+           size = 2) + 
+  labs(x = "Dose",
+       y = "Mean length (mm)",
+       title = "In smaller doses, Orange Juice was associated with greater mean tooth growth,
+compared to equivalent doses of Vitamin C",
+subtitle = "With the highest dose, the mean recorded length was almost identical.") +
+  scale_fill_manual(values = vit_c_palette) +
+  facet_wrap(supplement ~ ., ncol = 1) +
+  theme_minimal()
+```
+
+
+## <span style=color:#28A569>#1</span> - Use colour purposefully
+
+Add in our colours - named vector to the rescue!
+
+**Key advantages**
+
+- Know the colours are applied to the right data points!
+- Keep colour-data pairings consistent throughout the project
+- Package up a default palette
+- Easily reuse colours in the text
+  - `ggtext::element_markdown()` later in this workshop
+
+
+
+## <span style=color:#28A569>#1</span> - Use colour purposefully
+
+Get rid of unused colours
+
+```{r}
+#| output-location: column
+#| echo: true
+#| code-line-numbers: ""
+ToothGrowth %>%
+  mutate(supplement = case_when(supp == "OJ" ~ "Orange Juice", supp == "VC" ~ "Vitamin C", TRUE ~ as.character(supp))) %>%
+  group_by(supplement, dose) %>%
+  summarise(mean_length = mean(len)) %>%
+  mutate(categorical_dose = factor(dose)) %>%
+  ggplot(aes(x = categorical_dose,
+             y = mean_length,
+             fill = supplement)) +
+  geom_bar(stat = "identity",
+           colour = "#FFFFFF", 
+           size = 2) + 
+  labs(x = "Dose",
+       y = "Mean length (mm)",
+       title = "In smaller doses, Orange Juice was associated with greater mean tooth growth,
+compared to equivalent doses of Vitamin C",
+subtitle = "With the highest dose, the mean recorded length was almost identical.") +
+  scale_fill_manual(values = vit_c_palette) +
+  facet_wrap(supplement ~ ., ncol = 1) +
+  theme_minimal()
+```
+
+
+
+## <span style=color:#28A569>#1</span> - Use colour purposefully
+
+Get rid of unused colours
+
+```{r}
+#| output-location: column
+#| echo: true
+#| code-line-numbers: "18"
+ToothGrowth %>%
+  mutate(supplement = case_when(supp == "OJ" ~ "Orange Juice", supp == "VC" ~ "Vitamin C", TRUE ~ as.character(supp))) %>%
+  group_by(supplement, dose) %>%
+  summarise(mean_length = mean(len)) %>%
+  mutate(categorical_dose = factor(dose)) %>%
+  ggplot(aes(x = categorical_dose,
+             y = mean_length,
+             fill = supplement)) +
+  geom_bar(stat = "identity",
+           colour = "#FFFFFF", 
+           size = 2) + 
+  labs(x = "Dose",
+       y = "Mean length (mm)",
+       title = "In smaller doses, Orange Juice was associated with greater mean tooth growth,
+compared to equivalent doses of Vitamin C",
+subtitle = "With the highest dose, the mean recorded length was almost identical.") +
+  scale_fill_manual(values = vit_c_palette, 
+                    limits = force) +
+  facet_wrap(supplement ~ ., ncol = 1) +
+  theme_minimal()
+```
+
+
+
+## <span style=color:#28A569>#1</span> - Use colour purposefully
+
+Use transparency to indicate dose
+
+```{r}
+#| output-location: column
+#| echo: true
+#| code-line-numbers: "9"
+ToothGrowth %>%
+  mutate(supplement = case_when(supp == "OJ" ~ "Orange Juice", supp == "VC" ~ "Vitamin C", TRUE ~ as.character(supp))) %>%
+  group_by(supplement, dose) %>%
+  summarise(mean_length = mean(len)) %>%
+  mutate(categorical_dose = factor(dose)) %>%
+  ggplot(aes(x = categorical_dose,
+             y = mean_length,
+             fill = supplement)) +
+  geom_bar(aes(alpha = dose),
+           stat = "identity",
+           colour = "#FFFFFF", 
+           size = 2) + 
+  labs(x = "Dose",
+       y = "Mean length (mm)",
+       title = "In smaller doses, Orange Juice was associated with greater mean tooth growth,
+compared to equivalent doses of Vitamin C",
+subtitle = "With the highest dose, the mean recorded length was almost identical.") +
+  scale_fill_manual(values = vit_c_palette, limits = force) +
+  facet_wrap(supplement ~ ., ncol = 1) +
+  theme_minimal()
+```
+
+
+
+
+## <span style=color:#28A569>#1</span> - Use colour purposefully
+
+Use transparency to indicate dose - within limits
+
+```{r}
+#| output-location: column
+#| echo: true
+#| code-line-numbers: "19"
+ToothGrowth %>%
+  mutate(supplement = case_when(supp == "OJ" ~ "Orange Juice", supp == "VC" ~ "Vitamin C", TRUE ~ as.character(supp))) %>%
+  group_by(supplement, dose) %>%
+  summarise(mean_length = mean(len)) %>%
+  mutate(categorical_dose = factor(dose)) %>%
+  ggplot(aes(x = categorical_dose,
+             y = mean_length,
+             fill = supplement)) +
+  geom_bar(aes(alpha = dose),
+           stat = "identity",
+           colour = "#FFFFFF", 
+           size = 2) + 
+  labs(x = "Dose",
+       y = "Mean length (mm)",
+       title = "In smaller doses, Orange Juice was associated with greater mean tooth growth,
+compared to equivalent doses of Vitamin C",
+subtitle = "With the highest dose, the mean recorded length was almost identical.") +
+  scale_fill_manual(values = vit_c_palette, limits = force) +
+  scale_alpha(range = c(0.33, 1)) +
+  facet_wrap(supplement ~ ., ncol = 1) +
+  theme_minimal()
+```
+
+
+
+
+## <span style=color:#28A569>#1</span> - Use colour purposefully
+
+What is the dose unit again? `?ToothGrowth`
+
+```{r}
+#| output-location: column-fragment
+#| echo: true
+#| code-line-numbers: "20-22"
+ToothGrowth %>%
+  mutate(supplement = case_when(supp == "OJ" ~ "Orange Juice", supp == "VC" ~ "Vitamin C", TRUE ~ as.character(supp))) %>%
+  group_by(supplement, dose) %>%
+  summarise(mean_length = mean(len)) %>%
+  mutate(categorical_dose = factor(dose)) %>%
+  ggplot(aes(x = categorical_dose,
+             y = mean_length,
+             fill = supplement)) +
+  geom_bar(aes(alpha = dose),
+           stat = "identity",
+           colour = "#FFFFFF", 
+           size = 2) + 
+  labs(x = "Dose",
+       y = "Mean length (mm)",
+       title = "In smaller doses, Orange Juice was associated with greater mean tooth growth,
+compared to equivalent doses of Vitamin C",
+subtitle = "With the highest dose, the mean recorded length was almost identical.") +
+  scale_fill_manual(values = vit_c_palette, limits = force) +
+  scale_alpha(range = c(0.33, 1)) +
+  scale_x_discrete(breaks = c("0.5", "1", "2"), 
+                   labels = function(x) 
+                     paste0(x, " mg/day")) +
+  facet_wrap(supplement ~ ., ncol = 1) +
+  theme_minimal()
+```
+
+
+## <span style=color:#28A569>#1</span> - Use colour purposefully
+
+Legend has always been redundant! 
+
+```{r}
+#| output-location: column
+#| echo: true
+#| code-line-numbers: "23"
+ToothGrowth %>%
+  mutate(supplement = case_when(supp == "OJ" ~ "Orange Juice", supp == "VC" ~ "Vitamin C", TRUE ~ as.character(supp))) %>%
+  group_by(supplement, dose) %>%
+  summarise(mean_length = mean(len)) %>%
+  mutate(categorical_dose = factor(dose)) %>%
+  ggplot(aes(x = categorical_dose,
+             y = mean_length,
+             fill = supplement)) +
+  geom_bar(aes(alpha = dose),
+           stat = "identity",
+           colour = "#FFFFFF", 
+           size = 2) + 
+  labs(x = "Dose",
+       y = "Mean length (mm)",
+       title = "In smaller doses, Orange Juice was associated with greater mean tooth growth,
+compared to equivalent doses of Vitamin C",
+subtitle = "With the highest dose, the mean recorded length was almost identical.") +
+  scale_fill_manual(values = vit_c_palette, limits = force) +
+  scale_alpha(range = c(0.33, 1)) +
+  facet_wrap(supplement ~ ., ncol = 1) +
+  scale_x_discrete(breaks = c("0.5", "1", "2"), labels = function(x) paste0(x, " mg/day")) +
+  theme_minimal() +
+  theme(legend.position = "none")
+```
+
+
+## <span style=color:#28A569>#1</span> - Use colour (and orientation) purposefully
+
+And I find this so much less confusing!
+
+```{r}
+#| output-location: column-fragment
+#| echo: true
+#| code-line-numbers: "21"
+ToothGrowth %>%
+  mutate(supplement = case_when(supp == "OJ" ~ "Orange Juice", supp == "VC" ~ "Vitamin C", TRUE ~ as.character(supp))) %>%
+  group_by(supplement, dose) %>%
+  summarise(mean_length = mean(len)) %>%
+  mutate(categorical_dose = factor(dose)) %>%
+  ggplot(aes(x = categorical_dose,
+             y = mean_length,
+             fill = supplement)) +
+  geom_bar(aes(alpha = dose),
+           stat = "identity",
+           colour = "#FFFFFF", 
+           size = 2) + 
+  labs(x = "Dose",
+       y = "Mean length (mm)",
+       title = "In smaller doses, Orange Juice was associated with greater mean tooth growth,
+compared to equivalent doses of Vitamin C",
+subtitle = "With the highest dose, the mean recorded length was almost identical.") +
+  scale_fill_manual(values = vit_c_palette, limits = force) +
+  scale_alpha(range = c(0.4, 1)) +
+  scale_x_discrete(breaks = c("0.5", "1", "2"), labels = function(x) paste0(x, " mg/day")) +
+  coord_flip() +
+  facet_wrap(supplement ~ ., ncol = 1) +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+```
+
+## <span style=color:#28A569>#1</span> - Use colour (and orientation) purposefully {background=#2C3D4F}
+
+So much clearer, and we haven't even done any annotating! 
+
+:::: {.columns}
+
+
+::: {.column width=50%}
+
+```{r}
+#| echo: false
+ToothGrowth %>%
+  mutate(supplement = case_when(supp == "OJ" ~ "Orange Juice", supp == "VC" ~ "Vitamin C", TRUE ~ as.character(supp))) %>%
+  group_by(supplement, dose) %>%
+  summarise(mean_length = mean(len)) %>%
+  mutate(categorical_dose = factor(dose)) %>%
+  ggplot(aes(x = categorical_dose,
+             y = mean_length,
+             fill = supplement)) +
+  geom_bar(stat = "identity",
+           colour = "#FFFFFF", 
+           size = 2) + 
+  labs(x = "Dose",
+       y = "Mean length (mm)",
+       title = "In smaller doses, Orange Juice was associated with greater mean tooth growth,
+compared to equivalent doses of Vitamin C",
+subtitle = "With the highest dose, the mean recorded length was almost identical.") +
+  theme_minimal() +
+  facet_wrap(supplement ~ ., ncol = 1)
+```
+
+:::
+
+::: {.column width=50%}
+
+```{r}
+#| echo: false
+ToothGrowth %>%
+  mutate(supplement = case_when(supp == "OJ" ~ "Orange Juice", supp == "VC" ~ "Vitamin C", TRUE ~ as.character(supp))) %>%
+  group_by(supplement, dose) %>%
+  summarise(mean_length = mean(len)) %>%
+  mutate(categorical_dose = factor(dose)) %>%
+  ggplot(aes(x = categorical_dose,
+             y = mean_length,
+             fill = supplement)) +
+  geom_bar(aes(alpha = dose),
+           stat = "identity",
+           colour = "#FFFFFF", 
+           size = 2) + 
+  labs(x = "Dose",
+       y = "Mean length (mm)",
+       title = "In smaller doses, Orange Juice was associated with greater mean tooth growth,
+compared to equivalent doses of Vitamin C",
+subtitle = "With the highest dose, the mean recorded length was almost identical.") +
+  scale_fill_manual(values = vit_c_palette, limits = force) +
+  scale_alpha(range = c(0.4, 1)) +
+  scale_x_discrete(breaks = c("0.5", "1", "2"), labels = function(x) paste0(x, " mg/day")) +
+  coord_flip() +
+  theme_minimal() +
+  facet_wrap(supplement ~ ., ncol = 1) +
+  theme(legend.position = "none")
+```
+
+:::
+
+::::
+
+
+## Level up your plots
+
+### <span style=color:#28A569>#1</span> - Use colour purposefully {.faded}
+
+### <span style=color:#28A569>#2</span> - Add text hierarchy  
+
+### <span style=color:#28A569>#3</span> - Reduce unnecessary eye movement  {.faded}
+
+### <span style=color:#28A569>#4</span> - Highlight important patterns {.faded}
+
+
+## <span style=color:#28A569>#2</span> - Add text hierarchy
+
+
+::: {.fragment}
+![](https://public-images.interaction-design.org/literature/articles/materials/0B2CNUOVN6c9pyGDHu5152HWB4dbdevsDWj0QBNK.jpg){width=80%}
+:::
+
+::: footer
+Find out more: [https://www.interaction-design.org/](https://www.interaction-design.org/literature/article/the-ux-designer-s-guide-to-typography)
+:::
+
+
+## <span style=color:#28A569>#2</span> - Add text hierarchy
+
+Time to start playing with `theme()`!
+
+```{r}
+#| output-location: column-fragment
+#| echo: true
+#| code-line-numbers: "1|20"
+basic_plot <- ToothGrowth %>%
+  mutate(supplement = case_when(supp == "OJ" ~ "Orange Juice", supp == "VC" ~ "Vitamin C", TRUE ~ as.character(supp))) %>%
+  group_by(supplement, dose) %>%
+  summarise(mean_length = mean(len)) %>%
+  mutate(categorical_dose = factor(dose)) %>%
+  ggplot(aes(x = categorical_dose, y = mean_length, fill = supplement)) +
+  geom_bar(aes(alpha = dose), stat = "identity", colour = "#FFFFFF", size = 2) + 
+  labs(x = "Dose",
+       y = "Mean length (mm)",
+       title = "In smaller doses, Orange Juice was associated with greater mean tooth growth,
+compared to equivalent doses of Vitamin C",
+subtitle = "With the highest dose, the mean recorded length was almost identical.") +
+  scale_fill_manual(values = vit_c_palette, limits = force) +
+  scale_alpha(range = c(0.4, 1)) +
+  scale_x_discrete(breaks = c("0.5", "1", "2"), labels = function(x) paste0(x, " mg/day")) +
+  coord_flip() +
+  facet_wrap(supplement ~ ., ncol = 1) +
+  theme_minimal(base_size = 15)
+
+basic_plot
+```
+
+
+## <span style=color:#28A569>#2</span> - Add text hierarchy
+
+Time to start playing with `theme()`!
+
+```{r}
+#| output-location: column
+#| echo: true
+#| code-line-numbers: ""
+basic_plot +
+  theme(legend.position = "none")
+```
+
+
+## <span style=color:#28A569>#2</span> - Add text hierarchy
+
+Time to start playing with `theme()`!
+
+```{r}
+#| output-location: column
+#| echo: true
+#| code-line-numbers: "3"
+basic_plot +
+  theme(legend.position = "none",
+        text = element_text(colour = vit_c_palette["light_text"]))
+```
+
+
+## <span style=color:#28A569>#2</span> - Add text hierarchy
+
+Time to start playing with `theme()`!
+
+```{r}
+#| output-location: column
+#| echo: true
+#| code-line-numbers: "4"
+basic_plot +
+  theme(legend.position = "none",
+        text = element_text(colour = vit_c_palette["light_text"]),
+        plot.title = element_text(colour = vit_c_palette["dark_text"]))
+```
+
+
+## <span style=color:#28A569>#2</span> - Add text hierarchy
+
+Time to start playing with `theme()`!
+
+```{r}
+#| output-location: column
+#| echo: true
+#| code-line-numbers: "5-6"
+basic_plot +
+  theme(legend.position = "none",
+        text = element_text(colour = vit_c_palette["light_text"]),
+        plot.title = element_text(colour = vit_c_palette["dark_text"], 
+                                  size = rel(1.5), 
+                                  face = "bold"))
+```
+
+
+## <span style=color:#28A569>#2</span> - Add text hierarchy
+
+Move away from the default fonts
+
+```{r}
+#| output-location: column
+#| echo: true
+#| code-line-numbers: "4,8"
+basic_plot +
+  theme(legend.position = "none",
+        text = element_text(colour = vit_c_palette["light_text"],
+                            family = "Cabin"),
+        plot.title = element_text(colour = vit_c_palette["dark_text"], 
+                                  size = rel(1.5), 
+                                  face = "bold",
+                                  family = "Enriqueta"))
+```
+
+
+## <span style=color:#28A569>#2</span> - Add text hierarchy
+
+Move away from the default fonts
+
+```{r}
+#| output-location: column
+#| echo: true
+#| code-line-numbers: "9-12"
+basic_plot +
+  theme(legend.position = "none",
+        text = element_text(colour = vit_c_palette["light_text"],
+                            family = "Cabin"),
+        plot.title = element_text(colour = vit_c_palette["dark_text"], 
+                                  size = rel(1.5), 
+                                  face = "bold",
+                                  family = "Enriqueta"),
+        strip.text = element_text(family = "Enriqueta",
+                                  colour = vit_c_palette["light_text"], 
+                                  size = rel(1.1), face = "bold"),
+        axis.text = element_text(colour = vit_c_palette["light_text"]))
+```
+
+
+## <span style=color:#28A569>#2</span> - Add text hierarchy
+
+Choosing fonts can be tricky!
+
+::: {.incremental}
+- Brand guidelines
+- [Datawrapper guidance](https://blog.datawrapper.de/fonts-for-data-visualization/) - avoid fonts that are too wide/narrow! 
+- Websites + inspector tool
+- Oliver Schöndorfer's exploration of the [Font Matrix](https://pimpmytype.com/font-matrix/)
+:::
+
+<center>
+::: {.fragment}
+![](https://pimpmytype.com/wp-content/uploads/2022/05/font-matrix-14-matches-columns-update.png){width=50%}
+:::
+</center>
+
+::: footer
+Find out more: [pimpmytype.com/font-matrix/](https://pimpmytype.com/font-matrix/)
+:::
+
+
+## <span style=color:#28A569>#2</span> - Add text hierarchy
+
+Getting custom fonts to work can be frustrating!
+
+> Install fonts locally, restart R Studio + 📦 `{systemfonts}` (`{ragg}` + `{textshaping}`) + Set graphics device to "AGG" + 🤞
+
+:::: {.columns}
+
+::: {.column width=35%}
+::: {.fragment}
+
+![](images/agg.png)
+<br>
+<br>
+
+:::
+
+:::
+
+
+::: {.column width=65%}
+
+
+::: {.fragment}
+<center>
+> knitr::opts_chunk$set(dev = "ragg_png")
+</center>
+
+:::
+
+::: {.fragment}
+
+<center>
+![](https://c.tenor.com/OBcV0-r69mYAAAAC/throwing-computer-ron-swanson.gif){width=66%}
+</center>
+<br>
+<br>
+
+:::
+
+:::
+::::
+
+::: footer
+Find out more: [yjunechoe.github.io/posts/2021-06-24-setting-up-and-debugging-custom-fonts/](https://yjunechoe.github.io/posts/2021-06-24-setting-up-and-debugging-custom-fonts/)
+:::
+
+
+
+## <span style=color:#28A569>#2</span> - Add text hierarchy
+
+See what fonts are available on your device 
+
+- `systemfonts::system_fonts() %>% View()`
+
+::: {.fragment}
+![](images/fonts.png)
+:::
+
+## <span style=color:#28A569>#2</span> - Add text hierarchy
+
+Give everything some space to breathe
+
+```{r}
+#| output-location: column
+#| echo: true
+#| code-line-numbers: ""
+basic_plot +
+  theme(legend.position = "none",
+        text = element_text(colour = vit_c_palette["light_text"],
+                            family = "Cabin"),
+        plot.title = element_text(colour = vit_c_palette["dark_text"], 
+                                  size = rel(1.5), 
+                                  face = "bold",
+                                  family = "Enriqueta"),
+        strip.text = element_text(family = "Enriqueta",
+                                  colour = vit_c_palette["light_text"], 
+                                  size = rel(1.1), face = "bold"),
+        axis.text = element_text(colour = vit_c_palette["light_text"]))
+```
+
+
+
+## <span style=color:#28A569>#2</span> - Add text hierarchy
+
+Give everything some space to breathe
+
+```{r}
+#| output-location: column
+#| echo: true
+#| code-line-numbers: "9-10,11-12,16"
+basic_plot +
+  theme(legend.position = "none",
+        text = element_text(colour = vit_c_palette["light_text"], 
+                            family = "Cabin"),
+        plot.title = element_text(colour = vit_c_palette["dark_text"], 
+                                  size = rel(1.5), 
+                                  face = "bold",
+                                  family = "Enriqueta",
+                                  lineheight = 1.3,
+                                  margin = margin(0.5, 0, 1, 0, "lines")),
+        plot.subtitle = element_text(size = rel(1.1), lineheight = 1.3,
+                                     margin = margin(0, 0, 1, 0, "lines")),
+        strip.text = element_text(family = "Enriqueta",
+                                  colour = vit_c_palette["light_text"], 
+                                  size = rel(1.1), face = "bold",
+                                  margin = margin(2, 0, 0.5, 0, "lines")),
+        axis.text = element_text(colour = vit_c_palette["light_text"]))
+```
+
+
+## <span style=color:#28A569>#2</span> - Add text hierarchy
+
+Remove unnecessary text
+
+```{r}
+#| output-location: column
+#| echo: true
+#| code-line-numbers: "5"
+basic_plot +
+  theme(legend.position = "none",
+        text = element_text(colour = vit_c_palette["light_text"], 
+                            family = "Cabin"),
+        axis.title.y = element_blank(),
+        plot.title = element_text(colour = vit_c_palette["dark_text"], 
+                                  size = rel(1.5), 
+                                  face = "bold",
+                                  family = "Enriqueta",
+                                  lineheight = 1.3,
+                                  margin = margin(0.5, 0, 1, 0, "lines")),
+        plot.subtitle = element_text(size = rel(1.1), lineheight = 1.3,
+                                     margin = margin(0, 0, 1, 0, "lines")),
+        strip.text = element_text(family = "Enriqueta",
+                                  colour = vit_c_palette["light_text"], 
+                                  size = rel(1.1), face = "bold",
+                                  margin = margin(2, 0, 0.5, 0, "lines")),
+        axis.text = element_text(colour = vit_c_palette["light_text"]))
+```
+
+
+
+## <span style=color:#28A569>#2</span> - Add text hierarchy
+
+Watch out for that title!
+
+```{r}
+#| output-location: column
+#| echo: true
+#| code-line-numbers: "9|2-3"
+basic_plot +
+  labs(title = "In smaller doses, Orange Juice was associated with greater mean tooth growth,
+compared to equivalent doses of Vitamin C") +
+  theme(legend.position = "none",
+        text = element_text(colour = vit_c_palette["light_text"],
+                            family = "Cabin"),
+        axis.title.y = element_blank(),
+        plot.title = element_text(colour = vit_c_palette["dark_text"], 
+                                  size = 36, 
+                                  face = "bold",
+                                  family = "Enriqueta",
+                                  lineheight = 1.3,
+                                  margin = margin(0.5, 0, 1, 0, "lines")),
+        plot.subtitle = element_text(size = rel(1.1), lineheight = 1.3,
+                                     margin = margin(0, 0, 1, 0, "lines")),
+        strip.text = element_text(family = "Enriqueta",
+                                  colour = vit_c_palette["light_text"], 
+                                  size = rel(1.1), face = "bold",
+                                  margin = margin(2, 0, 0.5, 0, "lines")),
+        axis.text = element_text(colour = vit_c_palette["light_text"]))
+```
+
+
+## <span style=color:#28A569>#2</span> - Add text hierarchy
+
+Watch out for that title!
+
+```{r}
+#| output-location: column
+#| echo: true
+#| code-line-numbers: "2"
+basic_plot +
+  labs(title = "In smaller doses, Orange Juice was associated with greater mean tooth growth, compared to equivalent doses of Vitamin C") +
+  theme(legend.position = "none",
+        text = element_text(colour = vit_c_palette["light_text"],
+                            family = "Cabin"),
+        axis.title.y = element_blank(),
+        plot.title = element_text(colour = vit_c_palette["dark_text"], 
+                                  size = rel(1.5), 
+                                  face = "bold",
+                                  family = "Enriqueta",
+                                  lineheight = 1.3,
+                                  margin = margin(0.5, 0, 1, 0, "lines")),
+        plot.subtitle = element_text(size = rel(1.1), lineheight = 1.3,
+                                     margin = margin(0, 0, 1, 0, "lines")),
+        strip.text = element_text(family = "Enriqueta",
+                                  colour = vit_c_palette["light_text"], 
+                                  size = rel(1.1), face = "bold",
+                                  margin = margin(2, 0, 0.5, 0, "lines")),
+        axis.text = element_text(colour = vit_c_palette["light_text"]))
+```
+
+
+
+## <span style=color:#28A569>#2</span> - Add text hierarchy
+
+I :heart: :package: `{ggtext}`
+
+```{r}
+#| output-location: column-fragment
+#| echo: true
+#| code-line-numbers: "7,14"
+basic_plot +
+  labs(title = "In smaller doses, Orange Juice was associated with greater mean tooth growth, compared to equivalent doses of Vitamin C") +
+  theme(legend.position = "none",
+        text = element_text(colour = vit_c_palette["light_text"],
+                            family = "Cabin"),
+        axis.title.y = element_blank(),
+        plot.title = ggtext::element_textbox_simple(
+          colour = vit_c_palette["dark_text"], 
+          size = rel(1.5), 
+          face = "bold",
+          family = "Enriqueta",
+          lineheight = 1.3,
+          margin = margin(0.5, 0, 1, 0, "lines")),
+        plot.subtitle = ggtext::element_textbox_simple(
+          size = rel(1.1), 
+          lineheight = 1.3,
+          margin = margin(0, 0, 1, 0, "lines")),
+        strip.text = element_text(family = "Enriqueta",
+                                  colour = vit_c_palette["light_text"],
+                                  size = rel(1.1), face = "bold",
+                                  margin = margin(2, 0, 0.5, 0, "lines")),
+        axis.text = element_text(colour = vit_c_palette["light_text"]))
+```
+
+
+
+## <span style=color:#28A569>#2</span> - Add text hierarchy + colour!
+
+Hello, HTML + CSS! 
+
+> `We can make text <span style='color:green'>green</span> and also <span style='color:green; font-size:60pt'>really big</span>! 🤯`
+
+<br>
+
+We can make text <span style='color:green'>green</span> and also <span style='color:green; font-size:60pt'>really big</span>! 🤯
+
+
+## <span style=color:#28A569>#2</span> - Add text hierarchy + colour!
+
+I :heart: :package: `{ggtext}`
+
+```{r}
+#| output-location: column
+#| echo: true
+#| code-line-numbers: "2-7"
+basic_plot +
+  labs(title = 
+         paste0("In smaller doses, **<span style='color:",
+                vit_c_palette["Orange Juice"], "'>Orange Juice</span>**
+                      was associated with greater mean tooth growth,
+                      compared to equivalent doses of **<span style='color:",
+                vit_c_palette["Vitamin C"], "'>Vitamin C</span>**")
+  ) +
+  theme(legend.position = "none",
+        text = element_text(colour = vit_c_palette["light_text"],
+                            family = "Cabin"),
+        axis.title.y = element_blank(),
+        plot.title = ggtext::element_textbox_simple(colour = vit_c_palette["dark_text"], 
+                                                    size = rel(1.5), 
+                                                    face = "bold",
+                                                    family = "Enriqueta",
+                                                    lineheight = 1.3,
+                                                    margin = margin(0.5, 0, 1, 0, "lines")),
+        plot.subtitle = ggtext::element_textbox_simple(family = "Cabin", size = rel(1.1), lineheight = 1.3,
+                                                       margin = margin(0, 0, 1, 0, "lines")),
+        strip.text = element_text(family = "Enriqueta",
+                                  colour = vit_c_palette["light_text"],
+                                  size = rel(1.1), face = "bold",
+                                  margin = margin(2, 0, 0.5, 0, "lines")),
+        axis.text = element_text(colour = vit_c_palette["light_text"]))
+```
+
+
+
+## <span style=color:#28A569>#2</span> - Add text hierarchy {background=#2C3D4F}
+
+See for yourselves!
+
+:::: {.columns}
+
+::: {.column width=50%}
+
+```{r}
+basic_plot
+```
+
+:::
+
+
+::: {.column width=50%}
+
+```{r}
+themed_plot <- basic_plot +
+  labs(title = 
+         paste0("In smaller doses, **<span style='color:",
+                vit_c_palette["Orange Juice"], "'>Orange Juice</span>**
+                      was associated with greater mean tooth growth,
+                      compared to equivalent doses of **<span style='color:",
+                vit_c_palette["Vitamin C"], "'>Vitamin C</span>**")
+  ) +
+  theme(legend.position = "none",
+        text = element_text(colour = vit_c_palette["light_text"],
+                            family = "Cabin"),
+        axis.title.y = element_blank(),
+        plot.title = ggtext::element_textbox_simple(colour = vit_c_palette["dark_text"], 
+                                                    size = rel(1.5), 
+                                                    face = "bold",
+                                                    family = "Enriqueta",
+                                                    lineheight = 1.3,
+                                                    margin = margin(0.5, 0, 1, 0, "lines")),
+        plot.subtitle = ggtext::element_textbox_simple(family = "Cabin", size = rel(1.1), lineheight = 1.3,
+                                                       margin = margin(0, 0, 1, 0, "lines")),
+        strip.text = element_text(family = "Enriqueta",
+                                  colour = vit_c_palette["light_text"],
+                                  size = rel(1.1), face = "bold",
+                                  margin = margin(2, 0, 0.5, 0, "lines")),
+        axis.text = element_text(colour = vit_c_palette["light_text"])) 
+
+themed_plot
+```
+
+:::
+
+::::
+
+# Over to you! {background=#2C3D4F}
+
+- Apply the colours you chose earlier to your plot
+- See what fonts are available on your device - `systemfonts::systemfonts() |> View()`
+  - If you want to, install a new one! 
+- Apply one to the title, and one to the rest of the text using `theme()`
+- Create some text colour variants using `monochromeR::generate_palette()`
+- Apply those to the title and the other text elements
+- Play around with (relative) text sizes
+- Give me a shout if you get stuck! 
+
+**You have 10 minutes!**  📊 🎨 ☕  
+
+```{r}
+countdown::countdown(minutes = 10L, warn_when = 60, style = "border-color: #28A569")
+```
+
+
+## Packaging up
+
+- Package development is a whole other workshop (but it's easier than you think!)
+  - 📦 `{usethis}`
+- Any function or object you create can be added to a package
+
+::: {.fragment}
+
+```{r}
+#| echo: true
+#| output-location: fragment
+#| fig-height: 2
+
+carartemplates::carar_colours()
+
+monochromeR::view_palette(
+  carartemplates::carar_colours()
+)
+```
+
+
+::: footer
+Find out more: [Shannon Pileggi - Your first R package in 1 hour](https://www.pipinghotdata.com/posts/2020-10-25-your-first-r-package-in-1-hour/)
+:::
+
+
+:::
+
+## Packaging up 
+
+:::: {.columns}
+
+::: {.column width=50%}
+The current status: 
+
+```{r}
+#| eval: false
+#| echo: true
+
+plot +
+  theme_minimal() +
+  theme(...,
+        ...,
+        ...,
+        ...,
+        ...,
+        ...,
+        ...,
+        ...) # ~ 20+ lines of code
+
+```
+
+:::
+
+::: {.column width=50%}
+
+What we want:
+
+```{r}
+#| eval: false
+#| echo: true
+
+plot +
+  theme_guineapigs() # 1 line of code!
+
+```
+
+:::
+::::
+
+
+## Packaging up 
+
+```{r}
+#| echo: true
+theme_guineapigs <- function(base_text_size = 15,
+                             palette = vit_c_palette) {
+  
+  theme_minimal(base_size = base_text_size) +
+    theme(legend.position = "none",
+          text = element_text(colour = palette["light_text"],
+                              family = "Cabin"),
+          axis.title.y = element_blank(),
+          plot.title = ggtext::element_textbox_simple(colour = palette["dark_text"], 
+                                                      size = rel(1.5), 
+                                                      face = "bold",
+                                                      family = "Enriqueta",
+                                                      lineheight = 1.3,
+                                                      margin = margin(0.5, 0, 1, 0, "lines")),
+          plot.subtitle = ggtext::element_textbox_simple(family = "Cabin", size = rel(1.1), lineheight = 1.3,
+                                                         margin = margin(0, 0, 1, 0, "lines")),
+          strip.text = element_text(family = "Enriqueta",
+                                    colour = palette["light_text"],
+                                    size = rel(1.1), face = "bold",
+                                    margin = margin(2, 0, 0.5, 0, "lines")),
+          axis.text = element_text(colour = palette["light_text"])) 
+}
+
+```
+
+## Packaging up 
+
+```{r}
+#| echo: true
+#| output-location: column
+
+palmerpenguins::penguins %>%
+  ggplot() +
+  geom_point(aes(x = flipper_length_mm,
+                 y = bill_length_mm, 
+                 colour = sex)) +
+  labs(title = "Perfectly proportional penguins",
+       subtitle = "Look at them go!",
+       x = "Flipper length (mm)",
+       y = "Bill length(mm)")
+
+```
+
+
+## Packaging up 
+
+```{r}
+#| echo: true
+#| output-location: column
+#| #| code-line-numbers: "10"
+
+palmerpenguins::penguins %>%
+  ggplot() +
+  geom_point(aes(x = flipper_length_mm,
+                 y = bill_length_mm, 
+                 colour = sex)) +
+  labs(title = "Perfectly proportional penguins",
+       subtitle = "Look at them go!",
+       x = "Flipper length (mm)",
+       y = "Bill length(mm)") +
+  theme_guineapigs()
+
+```
+
+
+## Level up your plots {auto-animate=true}
+
+### <span style=color:#28A569>#1</span> - Use colour purposefully {.faded}
+
+### <span style=color:#28A569>#2</span> - Add text hierarchy {.faded}
+
+### <span style=color:#28A569>#3</span> - Reduce unnecessary eye movement 
+
+### <span style=color:#28A569>#4</span> - Highlight important patterns {.faded}
+
+
+## <span style=color:#28A569>#3</span> - Reduce unnecessary eye movement 
+
+We've made it easy to see what's what. Now, let's make it even easier to compare values.
+
+
+```{r}
+#| output-location: column
+#| echo: true
+themed_plot
+
+```
+
+
+## <span style=color:#28A569>#3</span> - Reduce unnecessary eye movement 
+
+We've made it easy to see what's what. Now, let's make it even easier to compare values.
+
+
+```{r}
+#| output-location: column
+#| echo: true
+#| code-line-numbers: "2"
+themed_plot +
+  scale_y_continuous(expand = c(0, 0.5))
+
+```
+
+
+## <span style=color:#28A569>#3</span> - Reduce unnecessary eye movement 
+
+We've made it easy to see what's what. Now, let's make it even easier to compare values.
+
+```{r}
+#| output-location: column
+#| echo: true
+#| code-line-numbers: "3"
+themed_plot +
+  scale_y_continuous(expand = c(0, 0.5)) +
+  theme(strip.text = element_text(hjust = 0.03))
+```
+
+
+## <span style=color:#28A569>#3</span> - Reduce unnecessary eye movement 
+
+Time to add some text boxes! 
+
+```{r}
+#| output-location: column-fragment
+#| echo: true
+#| code-line-numbers: "4-6"
+themed_plot +
+  scale_y_continuous(expand = c(0, 0.5)) +
+  theme(strip.text = element_text(hjust = 0.03)) +
+  # x (dose) and y (mean_length) are already 
+  # set in the global ggplot() call! 
+  ggtext::geom_textbox(aes(label = mean_length))
+
+```
+
+
+## <span style=color:#28A569>#3</span> - Reduce unnecessary eye movement 
+
+Time to add some text boxes! 
+
+```{r}
+#| output-location: column
+#| echo: true
+#| code-line-numbers: "5-7"
+themed_plot +
+  scale_y_continuous(expand = c(0, 0.5)) +
+  theme(strip.text = element_text(hjust = 0.03)) +
+  ggtext::geom_textbox(aes(label = mean_length),
+                       size = 6,
+                       halign = 1, 
+                       hjust = 1)
+
+```
+
+::: footer
+Find out more: [Alignment Cheatsheet](https://www.cararthompson.com/posts/2021-09-02-alignment-cheat-sheet/)
+:::
+
+
+## <span style=color:#28A569>#3</span> - Reduce unnecessary eye movement 
+
+Time to add some text boxes! 
+
+```{r}
+#| output-location: column
+#| echo: true
+#| code-line-numbers: "8-9"
+themed_plot +
+  scale_y_continuous(expand = c(0, 0.5)) +
+  theme(strip.text = element_text(hjust = 0.03)) +
+  ggtext::geom_textbox(aes(label = mean_length),
+                       size = 6,
+                       halign = 1, 
+                       hjust = 1,
+                       fill = NA, 
+                       box.colour = NA)
+```
+
+
+
+## <span style=color:#28A569>#3</span> - Reduce unnecessary eye movement 
+
+Time to add some text boxes! 
+
+```{r}
+#| output-location: column
+#| echo: true
+#| code-line-numbers: "10-12"
+themed_plot +
+  scale_y_continuous(expand = c(0, 0.5)) +
+  theme(strip.text = element_text(hjust = 0.03)) +
+  ggtext::geom_textbox(aes(label = mean_length),
+                       size = 6,
+                       halign = 1, 
+                       hjust = 1,
+                       fill = NA,
+                       box.colour = NA,
+                       family = "Cabin",
+                       colour = "#FFFFFF",
+                       fontface = "bold")
+
+```
+
+
+
+## <span style=color:#28A569>#3</span> - Reduce unnecessary eye movement 
+
+Now for the fun stuff... 
+
+```{r}
+#| output-location: column-fragment
+#| echo: true
+#| code-line-numbers: "6-9"
+themed_plot +
+  scale_y_continuous(expand = c(0, 0.5)) +
+  theme(strip.text = element_text(hjust = 0.03)) +
+  ggtext::geom_textbox(aes(
+    label = mean_length,
+    hjust = case_when(mean_length < 15 ~ 0,
+                      TRUE ~ 1),
+    halign = case_when(mean_length < 15 ~ 0,
+                       TRUE ~ 1)),
+    size = 6,
+    fill = NA,
+    box.colour = NA,
+    family = "Cabin",
+    fontface = "bold")
+
+```
+
+
+
+## <span style=color:#28A569>#3</span> - Reduce unnecessary eye movement 
+
+Now for the fun stuff... 
+
+```{r}
+#| output-location: column-fragment
+#| echo: true
+#| code-line-numbers: "10-11"
+themed_plot +
+  scale_y_continuous(expand = c(0, 0.5)) +
+  theme(strip.text = element_text(hjust = 0.03)) +
+  ggtext::geom_textbox(aes(
+    label = mean_length,
+    hjust = case_when(mean_length < 15 ~ 0,
+                      TRUE ~ 1),
+    halign = case_when(mean_length < 15 ~ 0,
+                       TRUE ~ 1),
+    colour = case_when(mean_length > 15 ~ "#FFFFFF",
+                       TRUE ~ vit_c_palette[supplement])),
+    size = 6,
+    fill = NA,
+    box.colour = NA,
+    family = "Cabin",
+    fontface = "bold")
+
+```
+
+
+
+## <span style=color:#28A569>#3</span> - Reduce unnecessary eye movement 
+
+?????? 
+
+```{r}
+#| output-location: column
+#| echo: true
+#| code-line-numbers: "10-11"
+themed_plot +
+  scale_y_continuous(expand = c(0, 0.5)) +
+  theme(strip.text = element_text(hjust = 0.03)) +
+  ggtext::geom_textbox(aes(
+    label = mean_length,
+    hjust = case_when(mean_length < 15 ~ 0,
+                      TRUE ~ 1),
+    halign = case_when(mean_length < 15 ~ 0,
+                       TRUE ~ 1),
+    colour = case_when(mean_length > 15 ~ "#FFFFFF",
+                       TRUE ~ vit_c_palette[supplement])),
+    size = 6,
+    fill = NA,
+    box.colour = NA,
+    family = "Cabin",
+    fontface = "bold")
+
+```
+
+
+## <span style=color:#28A569>#3</span> - Reduce unnecessary eye movement 
+
+`scale_colour_identity()` required!
+
+```{r}
+#| output-location: column-fragment
+#| echo: true
+#| code-line-numbers: "4"
+themed_plot +
+  scale_y_continuous(expand = c(0, 0.5)) +
+  theme(strip.text = element_text(hjust = 0.03)) +
+  scale_colour_identity() +
+  ggtext::geom_textbox(aes(
+    label = mean_length,
+    hjust = case_when(mean_length < 15 ~ 0,
+                      TRUE ~ 1),
+    halign = case_when(mean_length < 15 ~ 0,
+                       TRUE ~ 1),
+    colour = case_when(mean_length > 15 ~ "#FFFFFF",
+                       TRUE ~ vit_c_palette[supplement])),
+    size = 6,
+    fill = NA,
+    box.colour = NA,
+    family = "Cabin",
+    fontface = "bold")
+
+```
+
+
+## <span style=color:#28A569>#3</span> - Reduce unnecessary eye movement 
+
+We might as well add a bit of extra info (with text hierarchy!) to our labels...
+
+```{r}
+#| output-location: column-fragment
+#| echo: true
+#| code-line-numbers: "6-8"
+themed_plot +
+  scale_y_continuous(expand = c(0, 0.5)) +
+  theme(strip.text = element_text(hjust = 0.03)) +
+  scale_colour_identity() +
+  ggtext::geom_textbox(aes(
+    label = paste0("<span style=font-size:12pt>", 
+                   dose, "mg/day</span><br>", 
+                   mean_length, "mm"),
+    hjust = case_when(mean_length < 15 ~ 0,
+                      TRUE ~ 1),
+    halign = case_when(mean_length < 15 ~ 0,
+                       TRUE ~ 1),
+    colour = case_when(mean_length > 15 ~ "#FFFFFF",
+                       TRUE ~ vit_c_palette[supplement])),
+    size = 6,
+    fill = NA,
+    box.colour = NA,
+    family = "Cabin",
+    fontface = "bold")
+
+```
+
+
+# Wait, but why? {background=#2C3D4F}
+
+::: {.fragment}
+
+![](https://img.memegenerator.net/images/8719638.jpg)
+
+:::
+
+
+## <span style=color:#28A569>#3</span> - Reduce unnecessary eye movement {background=#2C3D4F}
+
+Easier than you think and makes a big difference! 🦸 
+
+
+:::: {.columns}
+
+::: {.column width=50%}
+
+```{r}
+themed_plot
+```
+
+:::
+
+
+::: {.column width=50%}
+
+```{r}
+themed_plot +
+  scale_y_continuous(expand = c(0, 0.5)) +
+  theme(strip.text = element_text(family = "Enriqueta",
+                                  colour = vit_c_palette["light_text"],
+                                  size = rel(1.1), face = "bold",
+                                  hjust = 0.03,
+                                  margin = margin(2, 0, 0.5, 0, "lines"))) +
+  scale_colour_identity() +
+  ggtext::geom_textbox(aes(
+    label = paste0("<span style=font-size:12pt>", 
+                   dose, "mg/day</span><br>", 
+                   mean_length, "mm"),
+    hjust = case_when(mean_length < 15 ~ 0,
+                      TRUE ~ 1),
+    halign = case_when(mean_length < 15 ~ 0,
+                       TRUE ~ 1),
+    colour = case_when(mean_length > 15 ~ "#FFFFFF",
+                       TRUE ~ vit_c_palette[supplement])),
+    size = 6,
+    fill = NA,
+    box.colour = NA,
+    family = "Cabin",
+    fontface = "bold")
+```
+
+:::
+
+::::
+
+# Over to you! {background=#2C3D4F}
+
+- Add a textbox (or several!) using `ggtext::geom_textbox()`
+- Add in some styling and conditional alignments
+- See what happens when you apply your plot code to random subsets of your data
+
+
+**You have 5 minutes!**  📊 🎨 ☕  
+
+```{r}
+countdown::countdown(minutes = 5L, warn_when = 60, style = "border-color: #28A569")
+```
+
+
+
+## Level up your plots 
+
+### <span style=color:#28A569>#1</span> - Use colour purposefully {.faded}
+
+### <span style=color:#28A569>#2</span> - Add text hierarchy  {.faded}
+
+### <span style=color:#28A569>#3</span> - Reduce unnecessary eye movement  {.faded}
+
+### <span style=color:#28A569>#4</span> - Highlight important patterns
+
+
+## <span style=color:#28A569>#4</span> - Highlight important patterns
+
+How did those penguins get on anyway...?
+
+:::: {.columns}
+
+::: {.column width=50%}
+
+::: {.fragment}
+
+```{r}
+penguins <- palmerpenguins::penguins %>%
+  mutate(banana_quantity = 
+           case_when(
+             species == "Adelie" & 
+               island == "Biscoe" ~ 1,
+             species == "Adelie" & 
+               island == "Dream" ~ 0.6,
+             species == "Adelie" & 
+               island == "Torgersen" ~ 0,
+             TRUE ~ 1))
+
+banana_colours <- list("Adelie" = "#89973d",
+                       "Chinstrap" = "#e8b92f",
+                       "Gentoo" = "#a45e41")
+
+dark_text <- monochromeR::generate_palette(
+  banana_colours$Chinstrap, "go_darker",
+  n_colours = 2)[2]
+
+light_text <-  monochromeR::generate_palette(
+  dark_text, "go_lighter",
+  n_colours = 3)[2]
+
+banana_colours <- list("Adelie" = "#89973d",
+                       "Chinstrap" = "#e8b92f",
+                       "Gentoo" = "#a45e41",
+                       "dark_text" = dark_text,
+                       "light_text" = light_text)
+
+basic_plot <- ggplot(penguins,
+               aes(x = bill_depth_mm,
+                   y = bill_length_mm,
+                   colour = species)) +
+  geom_point(aes(alpha = banana_quantity)) +
+  labs(title = "Banana loaf tastes best when baked with ripe or over-ripe bananas",
+       subtitle = "The Palmer Penguins carried out an experiment using bananas of different ripeness.
+The Adelie penguins were given unripe bananas, Gentoos were given over-ripe 
+bananas and Chinstraps were given yellow bananas.
+Each penguin was left to choose their own cooking time.",
+       x = "Baking time",
+       y = "Yumminess",
+       caption = "Data from {palmerpenguins}; misused for illustration purposes.") +
+  scale_alpha(range = c(0.33, 1)) +
+  theme_minimal(base_size = 16)
+
+basic_plot
+```
+
+:::
+
+:::
+
+::: {.column width=50%}
+
+::: {.fragment}
+
+```{r}
+penguins_themed_plot <- basic_plot +
+  scale_x_continuous(expand = expansion(mult = c(0.2, 0.02))) +
+  scale_colour_manual(values = banana_colours, limits = force) +
+  labs(title = paste0(
+    "Banana loaf tastes best when baked with ",
+    "<span style=\"color:", banana_colours$Chinstrap, 
+    "\">ripe</span> or<br><span style=\"color:",
+    banana_colours$Gentoo, "\">over-ripe</span> bananas")) +
+  theme(text = element_text(family = "DM Sans", 
+                            colour = banana_colours$light_text),
+        plot.title = ggtext::element_markdown(size = 18, 
+                                              family = "Poppins", 
+                                              colour = banana_colours$dark_text, 
+                                              face = "bold"),
+        axis.text = element_text(size = 6),
+        plot.caption = element_text(size = 6),
+        legend.position = "none",
+        panel.grid = element_line(colour = "#F6F6F5"))
+
+penguins_themed_plot
+
+```
+
+:::
+
+:::
+
+::::
+
+::: footer
+Find out more: [cararthompson.com/talks/hdsi_rug/](https://www.cararthompson.com/talks/hdsi_rug/)
+:::
+
+## <span style=color:#28A569>#4</span> - Highlight important patterns
+
+Consider text boxes instead of a legend... 
+
+::: fragment
+```{r}
+#| echo: true
+# Create a new tibble
+penguin_summaries <- palmerpenguins::penguins %>%
+  group_by(species) %>%
+  summarise(bill_depth_mm = mean(bill_depth_mm, na.rm = TRUE),
+            bill_length_mm = mean(bill_length_mm, na.rm = TRUE)) %>%
+  mutate(commentary = case_when(species == "Adelie" ~
+                                  "The Adelie penguins tried varying the amount of banana in the mix.
+                                Turns out, even a hint of green banana is detrimental to yumminess!",
+                                species == "Gentoo" ~
+                                  "Over-ripe bananas and typically shorter baking times.",
+                                TRUE ~ "Ripe bananas and slightly longer cooking times."))
+
+```
+::: 
+
+
+## <span style=color:#28A569>#4</span> - Highlight important patterns
+
+Consider text boxes instead of a legend... 
+
+```{r}
+#| echo: true
+#| output-location: column
+#| fig-width: 7
+#| fig-height: 6
+#| code-line-numbers: "2-7"
+penguins_themed_plot +
+  ggtext::geom_textbox(data = penguin_summaries,
+                       aes(label = paste0(
+                         "**Team ", species, "**",
+                         "<br><span style = \"color:",
+                         banana_colours$light_text,
+                         "\">", commentary, "</span>")))
+```
+
+
+
+## <span style=color:#28A569>#4</span> - Highlight important patterns
+
+I :heart: :package: `{geomtextpath}`
+
+```{r}
+#| echo: true
+#| output-location: column
+#| fig-width: 7
+#| fig-height: 6
+#| code-line-numbers: "2-5"
+penguins_themed_plot +
+  scale_alpha(range = c(0.1, 0.5)) +
+  geomtextpath::geom_textpath(aes(label = paste0(
+    "Team ", species)),
+    stat = "smooth")
+```
+
+## <span style=color:#28A569>#4</span> - Highlight important patterns
+
+I :heart: :package: `{geomtextpath}`
+
+
+```{r}
+#| echo: true
+#| output-location: column
+#| fig-width: 7
+#| fig-height: 6
+#| code-line-numbers: "6-8"
+penguins_themed_plot +
+  scale_alpha(range = c(0.1, 0.5)) +
+  geomtextpath::geom_textpath(aes(label = paste0(
+    "Team ", species)),
+    stat = "smooth",
+    family = "DM Sans",
+    fontface = "bold",
+    vjust = 0.2,
+    hjust = 0.1)
+```
+
+
+## <span style=color:#28A569>#4</span> - Highlight important patterns
+
+I :heart: :package: `{geomtextpath}`
+
+![](images/playfair.jpg)
+
+## <span style=color:#28A569>#4</span> - Highlight important patterns
+
+I :heart: :package: `{geomtextpath}`
+
+```{r}
+#| echo: true
+#| output-location: column
+#| fig-width: 7
+#| fig-height: 6
+#| code-line-numbers: "3,7"
+penguins_themed_plot +
+  scale_alpha(range = c(0.1, 0.5)) +
+  geomtextpath::geom_labelpath(aes(label = paste0(
+    "Team ", species)),
+    stat = "smooth",
+    family = "DM Sans",
+    alpha = 0.8)
+```
+
+
+## <span style=color:#28A569>#4</span> - Highlight important patterns
+
+What about individual penguins?
+
+```{r}
+#| echo: true
+#| code-line-numbers: "2-5|6-9"
+penguin_highlights <- palmerpenguins::penguins_raw %>%
+  # Housekeeping
+  janitor::clean_names() %>%
+  rename(bill_depth_mm = culmen_depth_mm,
+         bill_length_mm = culmen_length_mm) %>%
+  # Find star baker, runner up and lowest score
+  filter(bill_length_mm %in% c(max(bill_length_mm, na.rm = TRUE),
+                               sort(bill_length_mm, decreasing = TRUE)[2],
+                               min(bill_length_mm, na.rm = TRUE))) 
+```
+
+
+## <span style=color:#28A569>#4</span> - Highlight important data points {auto-animate=true}
+
+First, a bit of text manipulation!
+
+```{r}
+#| echo: true
+#| code-line-numbers: "8-10"
+penguin_highlights <- palmerpenguins::penguins_raw %>%
+  janitor::clean_names() %>%
+  rename(bill_depth_mm = culmen_depth_mm,
+         bill_length_mm = culmen_length_mm) %>%
+  filter(bill_length_mm %in% c(max(bill_length_mm, na.rm = TRUE),
+                               sort(bill_length_mm, decreasing = TRUE)[2],
+                               min(bill_length_mm, na.rm = TRUE))) %>%
+  # More housekeeping
+  mutate(species = gsub("(.) (.*)", "\\1", species))
+
+```
+
+<br>
+
+::: fragment
+
+```{r}
+#| echo: true
+raw_species <- unique(palmerpenguins::penguins_raw$Species)
+raw_species
+
+gsub("(.) (.*)", "\\1", raw_species)
+
+```
+:::
+
+## <span style=color:#28A569>#4</span> - Highlight important data points {auto-animate=true}
+
+First, a bit of text manipulation!
+
+```{r}
+#| echo: true
+#| code-line-numbers: "10-21"
+penguin_highlights <- palmerpenguins::penguins_raw %>%
+  janitor::clean_names() %>%
+  rename(bill_depth_mm = culmen_depth_mm,
+         bill_length_mm = culmen_length_mm) %>%
+  filter(bill_length_mm %in% c(max(bill_length_mm, na.rm = TRUE),
+                               sort(bill_length_mm, decreasing = TRUE)[2],
+                               min(bill_length_mm, na.rm = TRUE))) %>%
+  mutate(species = gsub("(.) (.*)", "\\1", species),
+         # Add commentary!
+         commentary = case_when(
+           bill_length_mm == max(bill_length_mm) ~
+             paste0("Our star baker is **", individual_id,
+                    "**, a ", species, " from ", island,
+                    ". Congratulations, ", individual_id, "!"),
+           bill_length_mm == sort(bill_length_mm, decreasing = TRUE)[2] ~
+             paste0("Our runner up is a ", species,
+                    " from ", island, ": **", individual_id,
+                    "**, proving that ripe and over-ripe bananas are both good options!"),
+           TRUE ~ paste0("**", individual_id,
+                         "**, did not have a good baking day. The combination of short cooking time and green bananas probably didn't help!")))
+
+```
+
+## <span style=color:#28A569>#4</span> - Highlight important data points {auto-animate=true chalkboard-buttons=true}
+
+Next, let's work out where we want our labels...
+
+
+```{r}
+#| fig-width: 7
+#| fig-height: 6
+penguins_themed_plot +
+  ggtext::geom_textbox(data = penguin_summaries,
+               aes(label = paste0(
+                 "**Team ", species, "**",
+                 "<br><span style = \"color:",
+                 banana_colours$light_text,
+                 "\">", commentary, "</span>")),
+               family = "DM Sans",
+               size = 3.5,
+               width = unit(9, "line"),
+               alpha = 0.9,
+               box.colour = NA)
+```
+
+
+
+## <span style=color:#28A569>#4</span> - Highlight important data points {auto-animate=true}
+
+... and add box coordinates and text alignment to our data
+
+```{r}
+#| echo: true
+#| code-line-numbers: "8-9|17-21|22-25"
+penguin_highlights <- palmerpenguins::penguins_raw %>%
+  janitor::clean_names() %>%
+  rename(bill_depth_mm = culmen_depth_mm,
+         bill_length_mm = culmen_length_mm) %>%
+  filter(bill_length_mm %in% c(max(bill_length_mm, na.rm = TRUE),
+                               sort(bill_length_mm, decreasing = TRUE)[2],
+                               min(bill_length_mm, na.rm = TRUE))) %>%
+  # more housekeeping!
+  arrange(bill_length_mm) %>%
+  mutate(species = gsub("(.) (.*)", "\\1", species),
+         commentary = case_when(
+           bill_length_mm == max(bill_length_mm) ~
+             paste0("Our star baker is **", individual_id, "**, a ", species, " from ", island, ". Congratulations, ", individual_id, "!"),
+           bill_length_mm == sort(bill_length_mm, decreasing = TRUE)[2] ~
+             paste0("Our runner up is a ", species, " from ", island, ": **", individual_id, "**, proving that ripe and over-ripe bananas are both good options!"),
+           TRUE ~ paste0("**", individual_id, "**, did not have a good baking day. The combination of short cooking time and green bananas probably didn't help!")),
+         # Add label and arrow coordinates
+         label_x = c(15, 18.15, 16.45),
+         label_y = c(34, 57, 59),
+         left_to_right = case_when(label_x < bill_depth_mm ~ 1,
+                             TRUE ~ 0),
+         arrow_x_end = case_when(label_x < bill_depth_mm ~ bill_depth_mm - 0.1,
+                                 TRUE ~ bill_depth_mm + 0.1),
+         arrow_y_end = case_when(label_y < bill_length_mm ~ bill_length_mm - 0.1,
+                                 TRUE ~ bill_length_mm + 0.1))
+
+```
+
+::: footer
+Find out more: [cararthompson.com/posts/2021-09-02-alignment-cheat-sheet/](https://www.cararthompson.com/posts/2021-09-02-alignment-cheat-sheet/)
+:::
+
+## <span style=color:#28A569>#4</span> - Highlight important data points {auto-animate=true}
+
+Let's add the annotations...
+
+```{r}
+#| echo: true
+#| output-location: column
+#| fig-width: 7
+#| fig-height: 6
+penguins_themed_plot +
+  ggtext::geom_textbox(data = penguin_summaries,
+               aes(label = paste0("**Team ", species, "**", "<br><span style = \"color:", banana_colours$light_text, "\">", commentary, "</span>")),
+               family = "DM Sans", size = 3.5, width = unit(9, "line"), alpha = 0.9, box.colour = NA)
+```
+
+
+## <span style=color:#28A569>#4</span> - Highlight important data points {auto-animate=true}
+
+Let's add the annotations...
+
+```{r}
+#| echo: true
+#| output-location: column
+#| fig-width: 7
+#| fig-height: 6
+#| code-line-numbers: "5-13"
+penguins_themed_plot +
+  ggtext::geom_textbox(data = penguin_summaries,
+               aes(label = paste0("**Team ", species, "**", "<br><span style = \"color:", banana_colours$light_text, "\">", commentary, "</span>")),
+               family = "DM Sans", size = 3.5, width = unit(9, "line"), alpha = 0.9, box.colour = NA) +
+  ggtext::geom_textbox(data = penguin_highlights,
+               aes(label = commentary,
+                   x = label_x,
+                   y = label_y,
+                   hjust = left_to_right),
+               family = "DM Sans", 
+               size = 3,
+               fill = NA,
+               box.colour = NA)
+```
+
+
+
+## <span style=color:#28A569>#4</span> - Highlight important data points {auto-animate=true}
+
+... using **arrows** and **alignments** to emphasise the story
+
+```{r}
+#| echo: true
+#| output-location: column
+#| fig-width: 7
+#| fig-height: 6
+#| code-line-numbers: "8-14"
+penguins_themed_plot +
+  ggtext::geom_textbox(data = penguin_summaries,
+               aes(label = paste0("**Team ", species, "**", "<br><span style = \"color:", banana_colours$light_text, "\">", commentary, "</span>")),
+               family = "DM Sans", size = 3.5, width = unit(9, "line"), alpha = 0.9, box.colour = NA) +
+  ggtext::geom_textbox(data = penguin_highlights,
+               aes(label = commentary, x = label_x, y = label_y, hjust = left_to_right),
+               family = "DM Sans", size = 3, fill = NA, box.colour = NA) +
+  geom_curve(data = penguin_highlights,
+             aes(x = label_x, xend = arrow_x_end,
+                 y = label_y, yend = arrow_y_end,
+                 hjust = left_to_right),
+             arrow = arrow(length = unit(0.1, "cm")),
+             curvature = list(0.15),
+             alpha = 0.5)
+```
+
+
+## <span style=color:#28A569>#4</span> - Highlight important data points {auto-animate=true}
+
+... using **arrows** and **alignments** to emphasise the story
+
+```{r}
+#| echo: true
+#| output-location: column
+#| fig-width: 7
+#| fig-height: 6
+#| code-line-numbers: "7"
+penguins_themed_plot +
+  ggtext::geom_textbox(data = penguin_summaries,
+               aes(label = paste0("**Team ", species, "**", "<br><span style = \"color:", banana_colours$light_text, "\">", commentary, "</span>")),
+               family = "DM Sans", size = 3.5, width = unit(9, "line"), alpha = 0.9, box.colour = NA) +
+  ggtext::geom_textbox(data = penguin_highlights,
+               aes(label = commentary, x = label_x, y = label_y, hjust = left_to_right,
+                   halign = left_to_right),
+               family = "DM Sans", size = 3, fill = NA, box.colour = NA) +
+  geom_curve(data = penguin_highlights,
+             aes(x = label_x, xend = arrow_x_end,
+                 y = label_y, yend = arrow_y_end),
+             arrow = arrow(length = unit(0.1, "cm")),
+             curvature = list(0.15),
+             alpha = 0.5)
+```
+
+
+## <span style=color:#28A569>#4</span> - Highlight important data points {auto-animate=true}
+
+Finally, enter `{gghighlight}`
+
+```{r}
+#| echo: true
+#| output-location: column
+#| fig-width: 7
+#| fig-height: 6
+#| code-line-numbers: "15-16|2,5,9"
+penguins_themed_plot +
+  ggtext::geom_textbox(data = filter(penguin_summaries, species == "Gentoo"),
+               aes(label = paste0("**Team ", species, "**", "<br><span style = \"color:", banana_colours$light_text, "\">", commentary, "</span>")),
+               family = "DM Sans", size = 3.5, width = unit(9, "line"), alpha = 0.9, box.colour = NA) +
+  ggtext::geom_textbox(data = filter(penguin_highlights, species == "Gentoo"),
+               aes(label = commentary, x = label_x, y = label_y, hjust = left_to_right,
+                   halign = left_to_right),
+               family = "DM Sans", size = 3, fill = NA, box.colour = NA) +
+  geom_curve(data = filter(penguin_highlights, species == "Gentoo"),
+             aes(x = label_x, xend = arrow_x_end,
+                 y = label_y, yend = arrow_y_end),
+             arrow = arrow(length = unit(0.1, "cm")),
+             curvature = list(0.15),
+             alpha = 0.5) +
+  gghighlight::gghighlight(species == "Gentoo", 
+                           use_direct_label = FALSE)
+```
+
+
+## <span style=color:#28A569>#4</span> - Highlight important data points {auto-animate=true}
+
+Finally, enter `{gghighlight}`
+
+```{r}
+#| echo: true
+#| output-location: column
+#| fig-width: 7
+#| fig-height: 6
+#| code-line-numbers: "5"
+penguins_themed_plot +
+  ggtext::geom_textbox(data = filter(penguin_summaries, species == "Chinstrap"),
+               aes(label = paste0("**Team ", species, "**", "<br><span style = \"color:", banana_colours$light_text, "\">", commentary, "</span>")),
+               family = "DM Sans", size = 3.5, width = unit(9, "line"), alpha = 0.9, box.colour = NA) +
+  gghighlight::gghighlight(species == "Chinstrap", 
+                           use_direct_label = FALSE)
+```
+
+
+## <span style=color:#28A569>#4</span> - Highlight important data points {auto-animate=true}
+
+Finally, enter `{gghighlight}`
+
+```{r}
+#| echo: true
+#| output-location: column
+#| fig-width: 7
+#| fig-height: 6
+#| code-line-numbers: "15"
+penguins_themed_plot +
+  ggtext::geom_textbox(data = penguin_summaries,
+               aes(label = paste0("**Team ", species, "**", "<br><span style = \"color:", banana_colours$light_text, "\">", commentary, "</span>")),
+               family = "DM Sans", size = 3.5, width = unit(9, "line"), alpha = 0.9, box.colour = NA) +
+  ggtext::geom_textbox(data = penguin_highlights, 
+               aes(label = commentary, x = label_x, y = label_y, hjust = left_to_right,
+                   halign = left_to_right),
+               family = "DM Sans", size = 3, fill = NA, box.colour = NA) +
+  geom_curve(data = penguin_highlights,
+             aes(x = label_x, xend = arrow_x_end,
+                 y = label_y, yend = arrow_y_end),
+             arrow = arrow(length = unit(0.1, "cm")),
+             curvature = list(0.15),
+             alpha = 0.5) +
+  gghighlight::gghighlight(bill_length_mm < 40)
+```
+
+
+## Level up your plots
+
+::: fragment
+The possibilities are endless! 
+:::
+
+:::: {.columns}
+
+::: {.column width=50%}
+
+```{r}
+themed_plot +
+  scale_y_continuous(expand = c(0, 0.5)) +
+  theme(strip.text = element_text(family = "Enriqueta",
+                                  colour = vit_c_palette["light_text"],
+                                  size = rel(1.1), face = "bold",
+                                  hjust = 0.03,
+                                  margin = margin(2, 0, 0.5, 0, "lines"))) +
+  scale_colour_identity() +
+  ggtext::geom_textbox(aes(
+    label = paste0("<span style=font-size:12pt>", 
+                   dose, "mg/day</span><br>", 
+                   mean_length, "mm"),
+    hjust = case_when(mean_length < 15 ~ 0,
+                      TRUE ~ 1),
+    halign = case_when(mean_length < 15 ~ 0,
+                       TRUE ~ 1),
+    colour = case_when(mean_length > 15 ~ "#FFFFFF",
+                       TRUE ~ vit_c_palette[supplement])),
+    size = 6,
+    fill = NA,
+    box.colour = NA,
+    family = "Cabin",
+    fontface = "bold")
+```
+
+:::
+
+
+::: {.column width=50%}
+
+```{r}
+penguins_themed_plot +
+  ggtext::geom_textbox(data = penguin_summaries,
+               aes(label = paste0("**Team ", species, "**", "<br><span style = \"color:", banana_colours$light_text, "\">", commentary, "</span>")),
+               family = "DM Sans", size = 3.5, width = unit(9, "line"), alpha = 0.9, box.colour = NA) +
+  ggtext::geom_textbox(data = penguin_highlights, 
+               aes(label = commentary, x = label_x, y = label_y, hjust = left_to_right,
+                   halign = left_to_right),
+               family = "DM Sans", size = 3, fill = NA, box.colour = NA) +
+  geom_curve(data = penguin_highlights,
+             aes(x = label_x, xend = arrow_x_end,
+                 y = label_y, yend = arrow_y_end),
+             arrow = arrow(length = unit(0.1, "cm")),
+             curvature = list(0.15),
+             alpha = 0.5)
+```
+
+:::
+
+::::
+
+
+## Level up your plots
+
+
+The possibilities are endless! 
+
+
+:::: {.columns}
+
+::: {.column width=50%}
+![](https://github.com/cararthompson/tidytuesdays/raw/main/plots/202301_birds.png)
+:::
+
+
+::: {.column width=50%}
+![](https://github.com/cararthompson/tidytuesdays/raw/main/plots/202209_lego.png)
+
+:::
+
+::::
+
+
+
+## Level up your plots
+
+
+The possibilities are endless! 
+
+
+:::: {.columns}
+
+::: {.column width=50%}
+![](https://github.com/cararthompson/30DayChartChallenge/raw/main/plots/3.4_trees_penguins.png)
+:::
+
+
+::: {.column width=50%}
+![](https://github.com/cararthompson/30DayChartChallenge2023/raw/main/plots/day11_circular.png)
+:::
+
+::::
+
+
+
+## Level up your plots
+
+
+The possibilities are endless! 
+
+
+:::: {.columns}
+
+::: {.column width=50%}
+![](https://github.com/cararthompson/30DayChartChallenge2023/raw/main/plots/day03_flora.gif)
+:::
+
+
+::: {.column width=50%}
+![](https://github.com/cararthompson/tidytuesdays/raw/main/plots/202007c_pets.gif)
+:::
+
+::::
+
+
+
+# We made it! {background=#2C3D4F background-image=https://thumbs.gfycat.com/PerfumedDefinitiveChipmunk-size_restricted.gif}
+
+::: fragment
+Time for snacks 😊
+:::
+
+
+# {background=#2C3D4F}
+
+<center>
+<h1>Over to you!</h1>
+
+<br>
+
+hello@cararthompson.com
+
+Tw/Li: @cararthompson
+
+<br>
+
+Dataviz Commissions <span style=color:#28A569>|</span> Dataviz Design Systems <span style=color:#28A569>|</span> Training & Consultations
+</center>
+
+:::footer
+[cararthompson.com](https://www.cararthompson.com)
+:::
