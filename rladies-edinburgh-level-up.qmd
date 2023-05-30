@@ -39,7 +39,7 @@ knitr::opts_chunk$set(dev = "ragg_png")
 👩 Cara Thompson
 
 👩‍💻 A love for patterns `|>` Psychology PhD `|>` 
-Head of Psychometrics, RCSEd `|>` 
+Psychometrics @ RCSEd `|>` 
 Data Visualisation Consultant
 
 ::: fragment
