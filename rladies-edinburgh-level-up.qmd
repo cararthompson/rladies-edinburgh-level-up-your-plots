@@ -144,6 +144,8 @@ ggplot(penguins,
            fun = "mean") +
   labs(title = "The taller the bar, the yummier the cake!") +
   theme_minimal(base_size = 24) +
+    scale_x_discrete(breaks = c("Adelie", "Chinstrap", "Gentoo"),
+                   labels = c("A = Adelie", "B = Chinstrap", "C = Gentoo")) +
   theme(text = element_text(family = "Noah"),
         axis.title = element_blank(),
         panel.grid = element_blank())
@@ -168,6 +170,8 @@ ggplot(penguins,
            fun = "mean") +
   scale_fill_manual(values = banana_type_palette) +
   labs(title = "The taller the bar, the yummier the cake!") +
+    scale_x_discrete(breaks = c("Adelie", "Chinstrap", "Gentoo"),
+                   labels = c("A = Adelie", "B = Chinstrap", "C = Gentoo")) +
   theme_minimal(base_size = 24) +
   theme(text = element_text(family = "Noah"),
         axis.title = element_blank(),
@@ -197,6 +201,8 @@ ggplot(filter(penguins, species == "Adelie"),
            size = 1) +
   scale_alpha(range = c(0.1, 0.9)) +
   labs(title = "The taller the bar, the yummier the cake!") +
+    scale_x_discrete(breaks = c("Adelie", "Chinstrap", "Gentoo"),
+                   labels = c("A = Adelie", "B = Chinstrap", "C = Gentoo")) +
   theme_minimal(base_size = 24) +
   theme(text = element_text(family = "Noah"),
         axis.title = element_blank(),
@@ -223,6 +229,8 @@ ggplot(filter(penguins, species == "Adelie"),
   scale_fill_manual(values = banana_type_palette) +
   scale_alpha(range = c(0.2, 1)) +
   labs(title = "The taller the bar, the yummier the cake!") +
+    scale_x_discrete(breaks = c("Adelie", "Chinstrap", "Gentoo"),
+                   labels = c("A = Adelie", "B = Chinstrap", "C = Gentoo")) +
   theme_minimal(base_size = 24) +  
   theme(text = element_text(family = "Noah"),
         axis.title = element_blank(),
@@ -242,6 +250,8 @@ penguin_plot <- ggplot(palmerpenguins::penguins %>%
                fill = species),
            size = 1.5) +
   theme_minimal(base_size = 24) +
+    scale_x_discrete(breaks = c("Adelie", "Chinstrap", "Gentoo"),
+                   labels = c("A = Adelie", "B = Chinstrap", "C = Gentoo")) +
   theme(text = element_text(family = "Noah"),
         axis.title = element_blank(),
         panel.grid = element_blank())
@@ -299,6 +309,8 @@ duration_plot <- ggplot(penguins,
            stat = "summary", 
            fun = "mean") +
   scale_fill_manual(values = banana_type_palette) +
+    scale_x_discrete(breaks = c("Adelie", "Chinstrap", "Gentoo"),
+                   labels = c("A = Adelie", "B = Chinstrap", "C = Gentoo")) +
   theme_minimal(base_size = 24) +
   labs(x = "",
        y = "Time in the oven") +
