@@ -3,7 +3,7 @@
   position: fixed;
   bottom: 0;
   right: 12px;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
   max-height: 2.2rem;
   height: 100%;
   width: auto;
@@ -17,7 +17,7 @@
   width: 100%;
   margin: 0 auto;
   text-align: center;
-  font-size: 16pt;
+  font-size: 15pt;
 }
 
 .reveal .footer > * {
@@ -70,13 +70,16 @@
 
 @media screen and (max-width: 800px) {
   .reveal .slide-logo {
-    max-height: 1.1rem;
-    bottom: 10px;
+    max-height: 1.2rem;
+    margin-bottom: 0px;
     right: 10px;
+    padding-bottom: 6px;
   }
   .reveal .footer {
-    font-size: 12pt;
+    font-size: 10pt;
     bottom: 0px;
+    padding-top: 8px;
+    padding-bottom: 6px;
   }
   .reveal .slide-number {
     font-size: 12px;
@@ -85,8 +88,10 @@
   .reveal .slide-menu-button .fas::before {
     height: 1.3rem;
     width: 1.3rem;
-    vertical-align: -0.125em;
+    vertical-align: -1em;
     background-size: 1.3rem 1.3rem;
+	padding-bottom: 6px;
+	margin-bottom: -0.35em;
   }
 
   .reveal .slide-chalkboard-buttons .fas::before {
